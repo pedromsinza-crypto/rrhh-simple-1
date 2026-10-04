@@ -1,0 +1,97 @@
+# Sistema Contable Multiempresa
+
+Aplicación en Python/FastAPI y PostgreSQL con una cuenta maestra para administrar accesos comerciales. Cada contador o administrador licenciado puede registrar y gestionar hasta 10 empresas venezolanas. Incluye interfaz web, contabilidad de doble partida, compras y ventas, pagos, reportes, suscripciones y registro manual de pagos de licencias.
+
+## Inicio local con Docker
+
+1. Copia `.env.example` a `.env` y cambia `JWT_SECRET`, `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD`. Usa una contraseña de al menos 12 caracteres y conserva las credenciales de manera segura.
+2. Desde esta carpeta ejecuta `docker compose up --build`.
+3. Abre `http://localhost:8000` para usar la interfaz gráfica. La documentación técnica de la API está disponible en `http://localhost:8000/docs`.
+
+La primera ejecución crea al **administrador del sistema** (superusuario) indicado por `BOOTSTRAP_ADMIN_*`. Este es el único rol que gestiona la plataforma, clientes, licencias y perfiles. Al crear o modificar una licencia, asigna el cargo y permisos del nuevo usuario según sus funciones: **contador** o **administrador de empresa** (profesional licenciado en administración). El administrador de empresa es un rol operativo de cliente y no tiene privilegios de superusuario. En la gestión de equipo de una empresa no se puede cambiar el rol: se respeta el que el administrador del sistema asignó a la cuenta invitada.
+
+## Desarrollo y pruebas
+
+```powershell
+Set-Location contabilidad
+py -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+$env:DATABASE_URL = "postgresql+psycopg://contabilidad:contabilidad@localhost:5433/contabilidad"
+$env:JWT_SECRET = "replace-with-a-random-secret-of-at-least-32-characters"
+$env:BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
+$env:BOOTSTRAP_ADMIN_PASSWORD = "replace-with-a-password-of-at-least-12-characters"
+uvicorn app.main:app --reload
+pytest
+```
+
+## Módulos/API incluidos
+
+- **Licencias comerciales:** máximo de 10 empresas por acceso (el administrador del sistema puede fijar un límite menor), fechas de suscripción/vencimiento, perfiles contador/administrador de empresa, activación, suspensión y revocación. Los accesos suspendidos, revocados o vencidos no pueden autenticarse en la API contable.
+- **Registro de pagos de suscripción:** fecha, monto, moneda VES/USD, método, referencia y observaciones; el historial es append-only y no se borra al revocar una licencia. Es registro manual: no procesa tarjetas, no verifica transferencias ni extiende la vigencia automáticamente; el maestro registra el pago y actualiza las fechas de suscripción.
+- **Estadísticas de uso:** tamaño físico total PostgreSQL, cantidad de licencias y empresas, y estimación de datos por licencia. La base y sus índices se comparten entre clientes: la estimación no es una cuota ni una medición aislada certificada.
+- **Aislamiento de accesos:** cada empresa pertenece a una licencia y solo miembros con acceso vigente pueden consultarla u operarla. El propietario mantiene su cupo; un administrador puede compartir esa empresa con otra cuenta licenciada, sin transferir la titularidad ni consumir el cupo empresarial del invitado.
+- **Empresas:** contadores y administradores con licencia pueden crear empresas hasta su cupo. Un administrador puede modificar o archivar una empresa equivocada y restaurarla; archivar es reversible y conserva las operaciones/auditoría. Los contadores pueden registrar empresas nuevas.
+- **Equipo por empresa:** un administrador de empresa puede agregar a una cuenta con licencia vigente; la compañía aparece para ambos usuarios y cada uno mantiene sus empresas/cupo propios. El sistema asigna automáticamente el cargo y permisos que el administrador del sistema definió para la cuenta invitada; el administrador de empresa no puede cambiarlos.
+- **Aprobación de dos personas:** las cuentas contables propuestas, asientos, facturas, pagos/cobros y saldos de apertura quedan pendientes hasta que otro administrador o contador de la misma empresa los revise. Quien prepara la operación no puede aprobarla. Las cuentas propuestas solo se habilitan en los asientos, libros y mayores después de la aprobación. Las cuentas de la plantilla de referencia quedan activas al instalarse.
+- **Empresas:** el límite global configurable se conserva solo para empresas legadas del usuario maestro. Las cuentas comerciales tienen su límite individual de hasta 10.
+- **Plan contable:** crea cuentas por empresa o instala una plantilla venezolana de referencia y luego adáptala al contador. La plantilla no sustituye un catálogo aprobado.
+- **Saldos de apertura:** asiento inicial único por empresa, balanceado y con cuentas de activo, pasivo y patrimonio.
+- **Clientes/proveedores, facturas, pagos y cobros:** cuentas por cobrar/pagar con abonos parciales y balances de contraparte; IGTF se evalúa explícitamente en el pago y utiliza la divisa/tasa capturada.
+- **Aprobación y reversos:** movimientos quedan pendientes, un usuario distinto con licencia de administrador o contador los aprueba/contabiliza, y los reversos crean otro asiento sin borrar historial.
+- **Conciliación bancaria:** captura manual de líneas de estado bancario y relación por cuenta, fecha y monto con pago contabilizado.
+- **Archivo documental por empresa:** carga y descarga autenticada de soportes PDF, imágenes, texto, Word y Excel (máximo 10 MB por archivo), clasificados por categoría; acceso limitado a miembros de esa empresa y registro de carga/archivo en auditoría. Los archivos se guardan como datos binarios en PostgreSQL y se incluyen en sus respaldos. Archivar oculta el documento, pero no equivale a borrado criptográfico de copias ni a retención legal configurada.
+- **Finanzas personales y agenda semanal:** cada usuario mantiene ingresos/gastos privados en VES, USD o EUR y un plan semanal propio. Los datos no se mezclan ni se convierten dentro de libros, impuestos o reportes de las empresas.
+- **Documentos comerciales de venta:** registra descripción de venta, configura correo y logo PNG/JPEG/WebP por empresa, genera una vista imprimible y envíala al correo registrado del cliente una vez aprobada. Es una cuenta comercial y **no sustituye la factura fiscal autorizada ni el sistema de facturación electrónica del SENIAT**. El envío requiere configurar `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_FROM`; nunca se activa un SMTP inseguro de respaldo.
+- **Cartera del contador y honorarios:** los contadores con licencia activa tienen una cartera privada de clientes por RIF, registran honorarios y vencimientos, generan una cuenta de cobro imprimible, registran manualmente el pago y envían recordatorios/cuentas por correo mediante el SMTP configurado. No es pasarela de pago ni reemplaza comprobantes fiscales.
+- **Importación bancaria:** importa CSV de hasta 5 MB a una cuenta bancaria seleccionada, acepta coma, punto y coma, barra o tabulación, encabezados de fecha/referencia/monto (o débito/crédito), normaliza fechas/montos y reporta duplicados/filas inválidas. No accede a credenciales bancarias ni sincroniza directamente con bancos; la conciliación sigue siendo manual.
+- **OCR opcional de facturas:** si se configura `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` y `AZURE_DOCUMENT_INTELLIGENCE_KEY`, los PDFs e imágenes del archivo documental se envían al modelo `prebuilt-invoice`; los campos reconocidos requieren revisión de otra persona y nunca crean facturas ni asientos automáticamente. Sin proveedor configurado, la aplicación informa que OCR no está disponible.
+- **Preparación fiscal y SENIAT:** la hoja de trabajo mensual guarda un resumen inmutable de los libros contabilizados y permite revisión por segunda persona. No presenta ni transmite declaraciones, no se conecta con el SENIAT y no produce archivos oficiales. Un conector oficial requerirá credenciales/contrato vigentes y validación jurídica/técnica antes de habilitarse.
+- **Acceso demo:** el solicitante registra correo, contraseña y datos de identidad, RIF, dirección y profesión. Recibe código de verificación al correo; después de verificarlo, el superadministrador revisa los datos y aprueba/rechaza manualmente. La aprobación crea licencia de contador por cinco días exactos de calendario (acceso hasta el final del quinto día), con cupo de una empresa. Requiere SMTP configurado y verificar identidad/RIF mediante un proceso autorizado; la aplicación no valida esos datos con fuentes gubernamentales. Los datos identificatorios son información personal: define aviso de privacidad, acceso restringido y retención/borrado antes de abrir registros al público.
+
+### Configurar correo con Gmail o Google Workspace
+
+1. Habilite la verificación en dos pasos en la cuenta remitente y genere una contraseña de aplicación de Google. No use ni comparta la contraseña normal de la cuenta.
+2. Desde PowerShell, ejecute `.\scripts\configure_gmail_smtp.ps1` en la carpeta de instalación. La contraseña de aplicación se solicita de forma oculta y se guarda en `.env`, que no debe compartirse ni subirse al repositorio.
+3. Reinicie FastAPI. El remitente queda configurado como `itservices.engineering@gmail.com`, mediante `smtp.gmail.com:587` con STARTTLS.
+
+La aplicación no requiere que se expongan claves SMTP en la interfaz o en mensajes. Si la cuenta no permite contraseñas de aplicación, use el SMTP autenticado y autorizado por su administrador de Google Workspace.
+El panel del superusuario muestra si SMTP está completo sin revelar secretos y habilita un botón para enviarse una prueba a su correo. El sistema exige STARTTLS incluso cuando el servidor SMTP usa autenticación.
+
+### Configurar OCR de Azure
+
+1. Cree o identifique un recurso de Azure AI Document Intelligence y obtenga su endpoint HTTPS y una de sus claves.
+2. Desde PowerShell, ejecute `.\scripts\configure_azure_ocr.ps1` en la carpeta de instalación. El endpoint se solicita en pantalla y la clave se solicita de forma oculta; ambos se guardan en `.env`.
+3. Antes de enviar facturas al OCR, informe a los usuarios qué archivos se transmitirán y obtenga las autorizaciones/consentimientos que correspondan. El proveedor procesa datos de facturas fuera de la base PostgreSQL local.
+4. Reinicie FastAPI. La aplicación usa el modelo `prebuilt-invoice`; la extracción es una sugerencia y debe revisarla una segunda persona.
+- **Usuarios y seguridad:** el administrador del sistema crea usuarios con licencia y asigna su rol según su cargo y funciones; cada usuario puede cambiar su contraseña. Las operaciones administrativas de licencias y pagos quedan auditadas.
+- **Reportes:** balance de comprobación, mayor, estados internos de situación/resultados y resumen fiscal. El resumen fiscal no es declaración.
+- **Respaldos:** respaldo manual desde la interfaz o automático diario programado en Windows, retención móvil de 30 días, descarga protegida y restauración offline confirmada.
+- `POST /companies/{id}/periods/close`: cierra un período si no quedan asientos en borrador.
+
+## Respaldo diario y restauración
+
+El superadministrador puede crear/descargar respaldos en **Administración → Respaldos**. Para instalar una tarea diaria a las 2:00 a. m. (usuario actual de Windows, retención 30 días), abre PowerShell en esta carpeta y ejecuta:
+
+```powershell
+.\.venv\Scripts\Activate.ps1
+.\scripts\install_backup_task.ps1
+```
+
+Los respaldos se guardan en `%LOCALAPPDATA%\Sistema Contable Multiempresa\backups`. Para restaurar, detén el servidor, usa un respaldo `.dump` confiable y ejecuta:
+
+```powershell
+.\scripts\restore_database.ps1 -BackupFile "C:\ruta\contabilidad-AAAA-MM-DD_HH-MM-SS.dump"
+```
+
+El script pide escribir `RESTAURAR CONTABILIDAD`; esta acción reemplaza datos. Guarda otra copia antes de restaurar.
+
+## Alcance normativo y producción
+
+Los importes contables de factura se capturan en VES; para pagos en otra moneda se registra el monto pagado en esa divisa y su tasa de cambio para estimar IGTF. La forma del RIF se valida localmente; no se consulta al SENIAT ni se valida el dígito verificador. Tasas, retenciones, excepciones y obligación de IGTF deben verificarse contra la normativa vigente y parametrizarse con un contador venezolano. La exportación CSV delimitada por `|` es un libro de control, **no se garantiza como archivo oficial de carga SENIAT**. No se presentan declaraciones ni se sincroniza con el SENIAT; tampoco se genera XML oficial de retenciones ni estados VEN-NIF reexpresados por inflación. Los documentos comerciales con logo son cuentas informativas, no facturas fiscales autorizadas. El archivo documental y los datos de identidad de la solicitud demo no son repositorios cifrados de extremo a extremo; configura HTTPS en producción, restringe accesos y define la base legal, retención y eliminación de datos personales.
+
+El IGTF se estima a partir del importe y tasa ingresados al capturar un pago; la persona operadora debe marcar expresamente si aplica y la obligación real requiere revisión profesional. El aislamiento de empresas se valida en la API mediante membresías y licencia, no mediante Row-Level Security (RLS) de PostgreSQL.
+
+El flujo de preparador y revisor proporciona una separación de funciones operativa; no certifica por sí mismo cumplimiento de todas las leyes, estatutos o políticas internas venezolanas. Configura roles y controles con el contador responsable y asesores legales de cada empresa.
+
+**Antes de vender accesos en Internet**, configura un dominio y HTTPS, secretos de producción, política de privacidad y retención, recuperación de contraseñas, monitoreo, restauración de respaldos probada y un proceso de respuesta a incidentes. El registro de pagos actual no es una pasarela de cobro; integra y prueba un proveedor de pagos antes de anunciar cobros automatizados. Evalúa almacenamiento y backups separados por cliente si necesitas cuotas exactas o garantías de aislamiento fuertes. Las migraciones versionadas se aplican al iniciar la API; crea un respaldo antes de actualizaciones importantes.

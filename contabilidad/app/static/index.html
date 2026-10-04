@@ -1,0 +1,2022 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102b52">
+  <title>Sistema Contable Multiempresa</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --navy: #102b52;
+      --blue: #2359d6;
+      --blue-dark: #1a45ac;
+      --sky: #eaf1ff;
+      --ink: #192840;
+      --muted: #69788e;
+      --line: #e4e9f0;
+      --paper: #ffffff;
+      --canvas: #f4f7fb;
+      --green: #16825d;
+      --red: #bd3c48;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); }
+    button, input, select { font: inherit; }
+    button { cursor: pointer; }
+    .hidden { display: none !important; }
+    .login-page { min-height: 100vh; display: grid; grid-template-columns: 1fr minmax(340px, 490px); }
+    .login-cover { padding: 9vh 8vw; display: flex; flex-direction: column; justify-content: space-between; color: white; background: radial-gradient(circle at 82% 18%, #3474ed 0, transparent 27%), linear-gradient(140deg, #102b52, #07192f); }
+    .brand { display: flex; align-items: center; gap: 12px; font-weight: 750; letter-spacing: -.02em; }
+    .brand-mark { width: 42px; height: 42px; display: grid; place-items: center; border-radius: 13px; background: var(--blue); color: white; font-size: 21px; }
+    .cover-copy { max-width: 570px; margin: auto 0; }
+    .cover-copy h1 { font-size: clamp(36px, 5vw, 62px); line-height: 1.04; letter-spacing: -.045em; margin: 0 0 18px; }
+    .cover-copy p, .cover-foot { color: #c4d3e9; line-height: 1.7; }
+    .cover-copy p { max-width: 530px; }
+    .cover-points { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 11px 18px; margin: 22px 0 0; padding: 0; list-style: none; }
+    .cover-points li { display: flex; align-items: flex-start; gap: 9px; color: #e0eaff; font-size: 13px; line-height: 1.5; }
+    .cover-points li::before { content: "✓"; flex: 0 0 auto; color: #9bc0ff; font-weight: 800; }
+    .cover-disclaimer { margin-top: 20px; color: #b8c9e2; font-size: 11px; line-height: 1.55; }
+    .cover-foot { font-size: 13px; }
+    .login-side { display: grid; place-items: center; padding: 32px; }
+    .login-card { width: min(100%, 390px); }
+    .login-card h2 { font-size: 27px; margin: 0 0 8px; }
+    .subtle { color: var(--muted); line-height: 1.55; }
+    .login-card .subtle { margin: 0 0 28px; }
+    .field { display: grid; gap: 7px; margin-bottom: 16px; }
+    label { font-size: 13px; font-weight: 650; color: #42536c; }
+    input, select { min-height: 43px; border: 1px solid #d5dde8; border-radius: 9px; padding: 9px 12px; background: white; color: var(--ink); width: 100%; outline: none; }
+    input:focus, select:focus { border-color: #6790ed; box-shadow: 0 0 0 3px #2359d61a; }
+    .btn { border: 0; border-radius: 9px; padding: 11px 15px; font-weight: 700; transition: .15s ease; }
+    .btn-primary { color: white; background: var(--blue); }
+    .btn-primary:hover { background: var(--blue-dark); }
+    .btn-secondary { color: #344766; border: 1px solid var(--line); background: white; }
+    .btn-danger { color: var(--red); background: #fff0f1; }
+    .btn-block { width: 100%; margin-top: 7px; }
+    .alert { border-radius: 9px; padding: 11px 13px; margin-bottom: 16px; font-size: 13px; line-height: 1.5; }
+    .alert-error { background: #fff0f1; border: 1px solid #f4d1d4; color: #922f3a; }
+    .alert-success { background: #eaf8f2; border: 1px solid #c6ead9; color: #146744; }
+    .layout { min-height: 100vh; display: grid; grid-template-columns: 250px 1fr; }
+    .sidebar { position: sticky; top: 0; height: 100vh; padding: 22px 16px; color: #eaf1fc; background: var(--navy); display: flex; flex-direction: column; }
+    .sidebar .brand { padding: 2px 8px 28px; font-size: 15px; }
+    .sidebar .brand-mark { background: #2b65e6; }
+    .side-label { padding: 12px 10px 8px; color: #a8bad5; text-transform: uppercase; font-size: 10px; letter-spacing: .12em; font-weight: 800; }
+    .nav { display: grid; gap: 5px; }
+    .nav button { padding: 11px 12px; border-radius: 8px; border: 0; color: #cfdbec; background: transparent; text-align: left; font-size: 13px; font-weight: 650; }
+    .nav button:hover, .nav button.active { color: white; background: #ffffff18; }
+    .sidebar-company { margin-top: 6px; color: white; background: #ffffff12; border-color: #ffffff2b; }
+    .sidebar-company option { color: var(--ink); }
+    .sidebar-bottom { margin-top: auto; border-top: 1px solid #ffffff24; padding: 16px 8px 0; }
+    .user-line { overflow: hidden; color: white; font-size: 13px; font-weight: 700; text-overflow: ellipsis; }
+    .user-email { margin-top: 4px; color: #afc0d9; font-size: 11px; overflow-wrap: anywhere; }
+    .logout { margin-top: 12px; width: 100%; color: #dce7f7; border: 1px solid #ffffff30; background: transparent; }
+    .main { min-width: 0; padding: 30px clamp(18px, 4vw, 54px) 60px; }
+    .topbar { display: flex; justify-content: space-between; align-items: center; gap: 16px; margin-bottom: 28px; }
+    .eyebrow { color: var(--blue); font-size: 11px; text-transform: uppercase; letter-spacing: .12em; font-weight: 800; }
+    .topbar h1 { margin: 4px 0 0; font-size: clamp(25px, 3vw, 34px); letter-spacing: -.04em; }
+    .company-chip { padding: 9px 12px; border: 1px solid var(--line); border-radius: 10px; color: #344766; background: white; font-size: 12px; font-weight: 700; }
+    .panel { padding: 22px; border: 1px solid var(--line); border-radius: 13px; background: var(--paper); box-shadow: 0 3px 14px #1d36500a; }
+    .panel + .panel { margin-top: 18px; }
+    .panel-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 18px; }
+    .panel h2 { font-size: 17px; margin: 0 0 5px; }
+    .panel p { margin: 0; }
+    .grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 16px; }
+    .grid-3 { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 14px; }
+    .span-2 { grid-column: span 2; }
+    .form-actions { display: flex; justify-content: flex-end; gap: 9px; }
+    .metric-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
+    .metric { padding: 19px; border: 1px solid var(--line); border-radius: 12px; background: white; }
+    .metric strong { display: block; font-size: 26px; letter-spacing: -.04em; }
+    .metric span { color: var(--muted); font-size: 12px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; white-space: nowrap; }
+    th { color: #6b7a90; font-size: 10px; letter-spacing: .08em; text-transform: uppercase; text-align: left; background: #f7f9fc; }
+    th, td { border-bottom: 1px solid #edf0f5; padding: 11px 10px; }
+    td.number { text-align: right; font-variant-numeric: tabular-nums; }
+    .badge { display: inline-flex; padding: 4px 8px; border-radius: 99px; background: var(--sky); color: #3158a5; font-size: 10px; font-weight: 750; }
+    .empty { padding: 28px 10px; color: var(--muted); text-align: center; font-size: 13px; }
+    .toolbar { display: flex; align-items: end; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
+    .toolbar .field { min-width: 190px; margin: 0; }
+    .toolbar .field.small { min-width: 140px; }
+    .license-list { display: grid; gap: 16px; }
+    .license-card { min-width: 0; padding: 20px; border: 1px solid var(--line); border-radius: 13px; background: white; }
+    .license-card-head { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding-bottom: 16px; border-bottom: 1px solid var(--line); }
+    .license-card-head h3 { margin: 0 0 4px; font-size: 16px; overflow-wrap: anywhere; }
+    .license-card-head p { margin: 0; }
+    .license-status { display: inline-flex; flex: 0 0 auto; padding: 5px 10px; border-radius: 99px; color: #146744; background: #eaf8f2; font-size: 12px; font-weight: 750; text-transform: capitalize; }
+    .license-status.suspended, .license-status.cancelled, .license-status.expired { color: #922f3a; background: #fff0f1; }
+    .license-fields { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; padding: 18px 0 10px; }
+    .license-field { min-width: 0; }
+    .license-field label { display: block; min-height: 34px; margin-bottom: 6px; line-height: 1.4; }
+    .license-field input, .license-field select { min-width: 0; }
+    .license-field .subtle { margin: 0 0 7px; font-size: 11px; }
+    .license-card-actions { display: flex; flex-wrap: wrap; gap: 9px; padding: 4px 0 17px; }
+    .license-usage { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; padding: 14px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+    .license-usage-item { min-width: 0; }
+    .license-usage-item span { display: block; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .license-usage-item strong { display: block; margin-top: 4px; overflow-wrap: anywhere; font-size: 15px; }
+    .license-payments { padding-top: 15px; }
+    .license-payments summary { color: var(--blue-dark); font-size: 13px; font-weight: 700; cursor: pointer; }
+    .license-payments .table-wrap { margin: 12px 0 16px; }
+    .license-payment-form { padding: 16px; border-radius: 10px; background: var(--canvas); }
+    .license-payment-form .field { min-width: 145px; }
+    .checkbox-row { display: flex; align-items: center; gap: 8px; min-height: 43px; color: #42536c; font-size: 13px; }
+    .checkbox-row input { width: 17px; min-height: 17px; }
+    @media (max-width: 800px) {
+      .login-page { grid-template-columns: 1fr; }
+      .login-cover { min-height: 430px; padding: 28px; }
+      .cover-copy { margin: 32px 0; }
+      .cover-copy h1 { font-size: clamp(34px, 8vw, 42px); }
+      .cover-foot { display: none; }
+      .login-side { padding: 34px 22px 48px; }
+      .layout { grid-template-columns: 1fr; }
+      .sidebar { position: static; height: auto; padding: 12px; }
+      .sidebar .brand { padding: 4px 5px 12px; }
+      .side-label, .sidebar-bottom { display: none; }
+      .nav { display: flex; overflow-x: auto; }
+      .nav button { flex: 0 0 auto; padding: 10px; }
+      .sidebar-company { margin-top: 10px; }
+      .main { padding: 22px 15px 45px; }
+      .company-chip { display: none; }
+    }
+    @media (max-width: 540px) {
+      .login-cover { min-height: 470px; padding: 24px; }
+      .cover-points { grid-template-columns: 1fr; gap: 8px; }
+      .grid, .grid-3 { grid-template-columns: 1fr; }
+      .span-2 { grid-column: auto; }
+      .metric-row { grid-template-columns: 1fr 1fr; }
+      .metric-row .metric:last-child { grid-column: span 2; }
+      .panel { padding: 17px 14px; }
+      .topbar { margin-bottom: 19px; }
+      .license-card { padding: 16px 13px; }
+      .license-card-head { align-items: flex-start; }
+      .license-fields { grid-template-columns: 1fr; gap: 10px; }
+      .license-field label { min-height: 0; }
+      .license-usage { grid-template-columns: 1fr 1fr; }
+      .license-payment-form { padding: 12px; }
+    }
+  </style>
+</head>
+<body>
+  <section id="login-page" class="login-page">
+    <div class="login-cover">
+      <div class="brand"><span class="brand-mark">∑</span><span>CONTABILIDAD<br>MULTIEMPRESA</span></div>
+      <div class="cover-copy">
+        <h1>Controla tus finanzas.<br>Ordena tu contabilidad.</h1>
+        <p>Administra hasta 10 empresas desde un mismo acceso. Registra compras, ventas, cobros, pagos y asientos contables; comparte el trabajo con tu equipo y consulta la información de cada empresa en un solo lugar.</p>
+        <ul class="cover-points">
+          <li>Clientes, proveedores, facturas y saldos pendientes</li>
+          <li>Plan de cuentas, saldos de apertura y contabilidad de doble partida</li>
+          <li>Revisión por otra persona y registro de cambios contables</li>
+          <li>Conciliación bancaria manual y reportes financieros y fiscales de control</li>
+        </ul>
+        <p class="cover-disclaimer">Diseñado para apoyar la gestión contable en Venezuela. Las tasas e impuestos son configurables y los reportes fiscales son de control; no se conecta al SENIAT ni presenta declaraciones o genera archivos oficiales. La conciliación bancaria es manual.</p>
+      </div>
+      <div class="cover-foot">Sistema Contable Multiempresa · Venezuela</div>
+    </div>
+    <div class="login-side">
+      <form id="login-form" class="login-card">
+        <div class="eyebrow">Portal de acceso</div>
+        <h2>Iniciar sesión</h2>
+        <p class="subtle">Ingresa con las credenciales asignadas por el administrador del sistema.</p>
+        <div id="login-message"></div>
+        <div class="field"><label for="login-email">Correo electrónico</label><input id="login-email" type="email" autocomplete="username" required></div>
+        <div class="field"><label for="login-password">Contraseña</label><input id="login-password" type="password" autocomplete="current-password" required></div>
+        <button class="btn btn-primary btn-block" type="submit">Entrar al sistema</button>
+      </form>
+      <details class="login-card" style="margin-top:32px">
+        <summary style="cursor:pointer;font-weight:700">Solicitar acceso demo de 5 días</summary>
+        <p class="subtle">El correo se verifica con un código. El administrador revisa manualmente cédula, RIF, dirección y profesión; los 5 días comienzan al aprobar la solicitud.</p>
+        <form id="demo-request-form">
+          <div id="demo-message"></div>
+          <div class="field"><label for="demo-name">Nombre y apellido</label><input id="demo-name" minlength="3" maxlength="150" required></div>
+          <div class="field"><label for="demo-email">Correo electrónico</label><input id="demo-email" type="email" required></div>
+          <div class="field"><label for="demo-password">Contraseña (mínimo 12 caracteres)</label><input id="demo-password" type="password" minlength="12" required></div>
+          <div class="field"><label for="demo-id">Cédula (V/E y dígitos)</label><input id="demo-id" placeholder="V12345678" minlength="6" maxlength="12" required></div>
+          <div class="field"><label for="demo-rif">RIF personal</label><input id="demo-rif" placeholder="V-12345678-9" required></div>
+          <div class="field"><label for="demo-address">Dirección</label><textarea id="demo-address" minlength="8" maxlength="2000" required></textarea></div>
+          <div class="field"><label for="demo-profession">Profesión u oficio</label><input id="demo-profession" minlength="2" maxlength="120" required></div>
+          <button class="btn btn-primary btn-block" type="submit">Enviar solicitud y verificar correo</button>
+        </form>
+        <form id="demo-verify-form" class="hidden" style="margin-top:18px">
+          <div class="field"><label for="demo-code">Código enviado a tu correo</label><input id="demo-code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required></div>
+          <button class="btn btn-secondary btn-block" type="submit">Verificar correo</button>
+          <button id="demo-resend-button" class="btn btn-secondary btn-block hidden" type="button">Reenviar código</button>
+        </form>
+      </details>
+    </div>
+  </section>
+
+  <section id="app-shell" class="layout hidden">
+    <aside class="sidebar">
+      <div class="brand"><span class="brand-mark">∑</span><span>Contabilidad<br>Multiempresa</span></div>
+      <div class="side-label">Administración</div>
+      <nav class="nav" aria-label="Navegación principal">
+        <button class="active" data-view="companies">▦ &nbsp; Empresas</button>
+        <button data-view="accounts">☷ &nbsp; Plan de cuentas</button>
+        <button data-view="documents">⇄ &nbsp; Compras y ventas</button>
+        <button data-view="vault">▣ &nbsp; Documentos</button>
+        <button data-view="contacts">♧ &nbsp; Clientes y proveedores</button>
+        <button data-view="payments">↔ &nbsp; Pagos y bancos</button>
+        <button data-view="review">✓ &nbsp; Revisión contable</button>
+        <button data-view="reports">▤ &nbsp; Reportes</button>
+        <button data-view="personal">◷ &nbsp; Finanzas personales</button>
+        <button id="professional-nav" data-view="professional" class="hidden">♙ &nbsp; Cartera profesional</button>
+        <button data-view="admin">⚙ &nbsp; Administración</button>
+        <button id="license-nav" data-view="licensing" class="hidden">◎ &nbsp; Licencias y pagos</button>
+      </nav>
+      <div class="side-label">Empresa activa</div>
+      <select id="company-picker" class="sidebar-company" aria-label="Empresa activa"></select>
+      <div class="sidebar-bottom">
+        <div id="user-name" class="user-line"></div>
+        <div id="user-email" class="user-email"></div>
+        <button id="logout-button" class="btn logout">Cerrar sesión</button>
+      </div>
+    </aside>
+    <main class="main">
+      <header class="topbar">
+        <div><div class="eyebrow">Panel de control</div><h1 id="page-title">Empresas</h1></div>
+        <div id="company-chip" class="company-chip">Sin empresa seleccionada</div>
+      </header>
+      <div id="notice"></div>
+      <section id="view-companies"></section>
+      <section id="view-accounts" class="hidden"></section>
+      <section id="view-documents" class="hidden"></section>
+      <section id="view-vault" class="hidden"></section>
+      <section id="view-contacts" class="hidden"></section>
+      <section id="view-payments" class="hidden"></section>
+      <section id="view-review" class="hidden"></section>
+      <section id="view-reports" class="hidden"></section>
+      <section id="view-personal" class="hidden"></section>
+      <section id="view-professional" class="hidden"></section>
+      <section id="view-admin" class="hidden"></section>
+      <section id="view-licensing" class="hidden"></section>
+    </main>
+  </section>
+
+  <script>
+    (() => {
+      const $ = (selector) => document.querySelector(selector);
+      const state = { token: "", email: "", companies: [], companyId: "", accounts: [], contacts: [], user: null, companyLimit: 10, ownedCompanyCount: 0, editingCompanyId: "", view: "companies", demoRequestId: "" };
+      const titles = { companies: "Empresas", accounts: "Plan de cuentas", documents: "Compras y ventas", vault: "Documentos", contacts: "Clientes y proveedores", payments: "Pagos y bancos", review: "Revisión contable", reports: "Reportes contables", personal: "Finanzas personales", professional: "Cartera profesional", admin: "Administración", licensing: "Licencias y pagos" };
+      const accountTypes = { asset: "Activo", liability: "Pasivo", equity: "Patrimonio", revenue: "Ingreso", expense: "Gasto" };
+      const esc = (value) => String(value ?? "").replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[ch]));
+      const currentCompany = () => state.companies.find(company => company.id === state.companyId);
+      const money = value => new Intl.NumberFormat("es-VE", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(Number(value || 0));
+      const monthNow = () => new Date().toISOString().slice(0, 7).replace("-", "");
+
+      function showMessage(message, kind = "error", target = "#notice") {
+        const node = $(target);
+        if (!node) return;
+        node.innerHTML = `<div class="alert alert-${kind === "success" ? "success" : "error"}">${esc(message)}</div>`;
+        if (target === "#notice") setTimeout(() => { node.innerHTML = ""; }, 6500);
+      }
+
+      async function api(path, options = {}) {
+        const headers = new Headers(options.headers || {});
+        if (state.token) headers.set("Authorization", `Bearer ${state.token}`);
+        if (options.body && !(options.body instanceof FormData)) headers.set("Content-Type", "application/json");
+        let response;
+        try {
+          response = await fetch(path, { ...options, headers });
+        } catch {
+          throw new Error("No se pudo conectar con el servidor local.");
+        }
+        const type = response.headers.get("content-type") || "";
+        const body = type.includes("application/json") ? await response.json() : await response.text();
+        if (!response.ok) {
+          const detail = typeof body === "object" ? body.detail : body;
+          throw new Error(Array.isArray(detail) ? detail.map(item => item.msg).join("; ") : detail || `Error HTTP ${response.status}`);
+        }
+        return body;
+      }
+
+      const post = (path, data) => api(path, { method: "POST", body: JSON.stringify(data) });
+
+      function setCompanyPicker() {
+        const picker = $("#company-picker");
+        picker.replaceChildren();
+        const activeCompanies = state.companies.filter(company => company.active);
+        if (!activeCompanies.length) {
+          const option = document.createElement("option");
+          option.textContent = "No hay empresas";
+          option.value = "";
+          picker.append(option);
+          state.companyId = "";
+        } else {
+          activeCompanies.forEach(company => {
+            const option = document.createElement("option");
+            option.value = company.id;
+            option.textContent = `${company.rif} · ${company.legal_name}`;
+            option.selected = company.id === state.companyId;
+            picker.append(option);
+          });
+        }
+        const company = currentCompany();
+        $("#company-chip").textContent = company ? `${company.legal_name} · ${company.rif}` : "Crea o selecciona una empresa";
+      }
+
+      async function loadCompanies() {
+        state.companies = await api("/companies");
+        state.user = await api("/auth/me");
+        $("#professional-nav").classList.toggle("hidden", state.user.license_role !== "accountant");
+        if (state.user.is_superuser) {
+          $("#license-nav").classList.remove("hidden");
+          const settings = await api("/admin/settings");
+          state.companyLimit = settings.company_limit;
+          state.ownedCompanyCount = state.companies.filter(company => company.active && !company.license_id).length;
+        } else {
+          $("#license-nav").classList.add("hidden");
+          state.companyLimit = state.user.company_limit || 0;
+          state.ownedCompanyCount = state.user.owned_company_count || 0;
+        }
+        if (!state.companies.some(item => item.id === state.companyId && item.active)) state.companyId = state.companies.find(item => item.active)?.id || "";
+        setCompanyPicker();
+        if (state.companyId) await loadAccounts();
+        render();
+      }
+
+      async function loadAccounts() {
+        if (!state.companyId) { state.accounts = []; return; }
+        state.accounts = await api(`/companies/${state.companyId}/accounts`);
+      }
+
+      function switchView(view) {
+        state.view = view;
+        document.querySelectorAll(".nav button").forEach(button => button.classList.toggle("active", button.dataset.view === view));
+        $("#page-title").textContent = titles[view];
+        document.querySelectorAll("main > section").forEach(section => section.classList.add("hidden"));
+        $(`#view-${view}`).classList.remove("hidden");
+        render();
+      }
+
+      function renderCompanies() {
+        const company = currentCompany();
+        const canManageCompany = state.user?.is_superuser || currentRole() === "admin";
+        const canCreateCompany = state.user?.is_superuser || ["admin", "accountant"].includes(state.user?.license_role);
+        $("#view-companies").innerHTML = `
+          <div class="metric-row">
+            <div class="metric"><strong>${state.ownedCompanyCount}${state.companyLimit ? `/${state.companyLimit}` : ""}</strong><span>${state.user?.is_superuser ? "Empresas activas · límite global" : "Empresas de tu licencia · máximo asignado"}</span></div>
+            <div class="metric"><strong>${state.accounts.length}</strong><span>Cuentas en la empresa activa</span></div>
+            <div class="metric"><strong>${company ? esc(company.framework) : "—"}</strong><span>Marco contable seleccionado</span></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Registrar empresa</h2><p class="subtle">Cada compañía mantiene sus propias cuentas y movimientos.</p></div></div>
+            <form id="company-form">
+              <div class="grid">
+                <div class="field"><label for="co-rif">RIF</label><input id="co-rif" placeholder="J-12345678-9" required></div>
+                <div class="field"><label for="co-name">Razón social</label><input id="co-name" maxlength="150" required></div>
+                <div class="field"><label for="co-framework">Marco VEN-NIF</label><select id="co-framework"><option value="PYME">PYME</option><option value="GE">Gran Entidad (GE)</option></select></div>
+                <div class="field"><label for="co-currency">Moneda contable</label><select id="co-currency"><option value="VES">Bolívar (VES)</option></select></div>
+                <div class="field span-2"><label for="co-address">Dirección fiscal</label><input id="co-address" maxlength="2000"></div>
+                <div class="field span-2"><label for="co-registry">Registro mercantil</label><input id="co-registry" maxlength="2000"></div>
+                <label class="checkbox-row span-2"><input id="co-special" type="checkbox"> Sujeto Pasivo Especial</label>
+              </div>
+              <div class="form-actions"><button id="company-submit" class="btn btn-primary" type="submit" ${!canCreateCompany || state.ownedCompanyCount >= state.companyLimit ? "disabled" : ""}>Guardar empresa</button><button id="company-cancel-edit" class="btn btn-secondary hidden" type="button">Cancelar edición</button></div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Empresas disponibles</h2><p class="subtle">Tu usuario solo muestra las empresas a las que tiene acceso.</p></div></div>
+            <div id="company-list" class="table-wrap"></div>
+          </div>
+          <div id="company-setup-panel" class="panel">
+            <div class="panel-head"><div><h2>Preparar la contabilidad</h2><p class="subtle">Carga una plantilla editable y, si corresponde, los saldos iniciales de la empresa seleccionada.</p></div></div>
+            <div class="toolbar"><button id="install-chart" class="btn btn-secondary">Instalar plan base Venezuela</button><button id="opening-button" class="btn btn-secondary" ${["admin", "accountant"].includes(currentRole()) ? "" : "disabled"}>Registrar saldos de apertura</button></div>
+            <div id="opening-form-host"></div>
+          </div>`;
+        if (!canCreateCompany) $("#company-form").closest(".panel").classList.add("hidden");
+        if (!company) $("#company-setup-panel").classList.add("hidden");
+        const list = $("#company-list");
+        if (!state.companies.length) {
+          list.innerHTML = '<div class="empty">Todavía no hay empresas. Registra la primera para comenzar.</div>';
+        } else {
+          const table = document.createElement("table");
+          table.innerHTML = "<thead><tr><th>RIF</th><th>Razón social</th><th>Marco</th><th>Condición fiscal</th><th>Estado</th><th>Acciones</th></tr></thead>";
+          const tbody = document.createElement("tbody");
+          state.companies.forEach(item => {
+            const row = document.createElement("tr");
+            [item.rif, item.legal_name, item.framework, item.special_taxpayer ? "Sujeto Pasivo Especial" : "Ordinario", item.active ? "Activa" : "Archivada"].forEach(value => {
+              const cell = document.createElement("td");
+              cell.textContent = value;
+              row.append(cell);
+            });
+            const actions = document.createElement("td");
+            if (item.active && canManageCompany) {
+              const edit = document.createElement("button");
+              edit.className = "btn btn-secondary";
+              edit.type = "button";
+              edit.textContent = "Modificar";
+              edit.addEventListener("click", event => {
+                event.stopPropagation();
+                state.editingCompanyId = item.id;
+                $("#co-rif").value = item.rif;
+                $("#co-name").value = item.legal_name;
+                $("#co-framework").value = item.framework;
+                $("#co-currency").value = item.currency;
+                $("#co-address").value = item.tax_address;
+                $("#co-registry").value = item.mercantile_registry;
+                $("#co-special").checked = item.special_taxpayer;
+                $("#company-submit").textContent = "Guardar cambios";
+                $("#company-submit").disabled = false;
+                $("#company-cancel-edit").classList.remove("hidden");
+                $("#company-form").scrollIntoView({ behavior: "smooth", block: "center" });
+              });
+              const remove = document.createElement("button");
+              remove.className = "btn btn-danger";
+              remove.type = "button";
+              remove.textContent = "Eliminar";
+              remove.addEventListener("click", async event => {
+                event.stopPropagation();
+                if (!confirm(`Archivar "${item.legal_name}"? Sus datos contables se conservarán y podrás restaurarla después.`)) return;
+                try {
+                  await api(`/companies/${item.id}`, { method: "DELETE" });
+                  if (state.editingCompanyId === item.id) resetCompanyForm();
+                  await loadCompanies();
+                  showMessage("Empresa archivada; sus datos se conservaron.", "success");
+                } catch (error) { showMessage(error.message); }
+              });
+              actions.append(edit, remove);
+            } else if (!item.active && canManageCompany) {
+              const restore = document.createElement("button");
+              restore.className = "btn btn-secondary";
+              restore.type = "button";
+              restore.textContent = "Restaurar";
+              restore.addEventListener("click", async event => {
+                event.stopPropagation();
+                try {
+                  await api(`/companies/${item.id}/restore`, { method: "POST" });
+                  await loadCompanies();
+                  showMessage("Empresa restaurada.", "success");
+                } catch (error) { showMessage(error.message); }
+              });
+              actions.append(restore);
+            }
+            row.append(actions);
+            if (item.active) {
+              row.addEventListener("click", () => { state.companyId = item.id; setCompanyPicker(); loadAccounts().then(render); });
+              row.title = "Seleccionar empresa";
+              row.style.cursor = "pointer";
+            }
+            tbody.append(row);
+          });
+          table.append(tbody);
+          list.replaceChildren(table);
+        }
+        function resetCompanyForm() {
+          state.editingCompanyId = "";
+          $("#company-form").reset();
+          $("#company-submit").textContent = "Guardar empresa";
+          $("#company-submit").disabled = !canCreateCompany || state.ownedCompanyCount >= state.companyLimit;
+          $("#company-cancel-edit").classList.add("hidden");
+        }
+        $("#company-cancel-edit").addEventListener("click", resetCompanyForm);
+        $("#company-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          const button = event.submitter;
+          button.disabled = true;
+          try {
+            const payload = {
+              rif: $("#co-rif").value,
+              legal_name: $("#co-name").value.trim(),
+              framework: $("#co-framework").value,
+              currency: $("#co-currency").value,
+              tax_address: $("#co-address").value.trim(),
+              mercantile_registry: $("#co-registry").value.trim(),
+              special_taxpayer: $("#co-special").checked
+            };
+            const editing = state.editingCompanyId;
+            const saved = editing
+              ? await api(`/companies/${editing}`, { method: "PUT", body: JSON.stringify(payload) })
+              : await post("/companies", payload);
+            state.companyId = saved.id;
+            resetCompanyForm();
+            await loadCompanies();
+            showMessage(editing ? "Datos de empresa actualizados." : "Empresa registrada con su membresía.", "success");
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        $("#install-chart").addEventListener("click", async () => {
+          try {
+            const result = await post(`/companies/${state.companyId}/accounts/templates/venezuela`, {});
+            await loadAccounts();
+            showMessage(`Plan base instalado: ${result.created} cuentas nuevas. Es una plantilla de referencia; revísala y adáptala antes de usarla.`, "success");
+            renderCompanies();
+          } catch (error) { showMessage(error.message); }
+        });
+        $("#opening-button").addEventListener("click", async () => {
+          try {
+            const opening = await api(`/companies/${state.companyId}/opening-balances`);
+            if (opening) { showMessage(`Saldos de apertura del ${opening.as_of_date}: ${opening.status === "posted" ? "contabilizados" : "pendientes de aprobación por otra persona"}.`); return; }
+            if (!state.accounts.length) { showMessage("Primero instala o crea el plan de cuentas."); return; }
+            showOpeningForm($("#opening-form-host"));
+          } catch (error) { showMessage(error.message); }
+        });
+      }
+
+      function accountSelect(id, label, types, required = true) {
+        const choices = state.accounts.filter(account => account.active && account.status === "approved" && types.includes(account.account_type));
+        return `<div class="field"><label for="${id}">${label}</label><select id="${id}" ${required ? "required" : ""}><option value="">Selecciona una cuenta</option>${choices.map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>`;
+      }
+
+      function renderAccounts() {
+        if (!state.companyId) {
+          $("#view-accounts").innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        $("#view-accounts").innerHTML = `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Nueva cuenta contable</h2><p class="subtle">Organiza las cuentas por código y naturaleza.</p></div></div>
+            <form id="account-form">
+              <div class="grid-3">
+                <div class="field"><label for="ac-code">Código</label><input id="ac-code" maxlength="30" required></div>
+                <div class="field"><label for="ac-name">Nombre</label><input id="ac-name" maxlength="150" required></div>
+                <div class="field"><label for="ac-type">Tipo</label><select id="ac-type">${Object.entries(accountTypes).map(([value, label]) => `<option value="${value}">${label}</option>`).join("")}</select></div>
+                <div class="field"><label for="ac-parent">Cuenta padre (opcional)</label><select id="ac-parent"><option value="">Sin cuenta padre</option>${state.accounts.filter(account => account.active && account.status === "approved").map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>
+                <label class="checkbox-row"><input id="ac-monetary" type="checkbox" checked> Partida monetaria</label>
+              </div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit" ${["admin", "accountant"].includes(currentRole()) ? "" : "disabled"}>Proponer cuenta para aprobación</button></div>
+            </form>
+          </div>
+          <div class="panel"><div class="panel-head"><div><h2>Plan de cuentas</h2><p class="subtle">${state.accounts.length} cuentas registradas</p></div></div><div id="accounts-table" class="table-wrap"></div></div>`;
+        const wrap = $("#accounts-table");
+        if (!state.accounts.length) wrap.innerHTML = '<div class="empty">No hay cuentas. Crea las cuentas de activo, pasivo, patrimonio, ingreso y gasto para empezar.</div>';
+        else {
+          const table = document.createElement("table");
+          table.innerHTML = "<thead><tr><th>Código</th><th>Cuenta</th><th>Tipo</th><th>Clasificación</th><th>Estado</th><th>Enviada por</th><th>Aprobada por</th></tr></thead>";
+          const tbody = document.createElement("tbody");
+          state.accounts.forEach(account => {
+            const row = document.createElement("tr");
+            [account.code, account.name, accountTypes[account.account_type], account.monetary ? "Monetaria" : "No monetaria", account.status === "approved" ? "Aprobada" : "Pendiente de revisión", account.created_by || "Plan de referencia", account.reviewed_by || "—"].forEach(value => {
+              const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+            });
+            tbody.append(row);
+          });
+          table.append(tbody); wrap.replaceChildren(table);
+        }
+        $("#account-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          const button = event.submitter; button.disabled = true;
+          try {
+            await post(`/companies/${state.companyId}/accounts`, {
+              code: $("#ac-code").value.trim(), name: $("#ac-name").value.trim(),
+              account_type: $("#ac-type").value, parent_id: $("#ac-parent").value || null,
+              monetary: $("#ac-monetary").checked
+            });
+            await loadAccounts(); renderAccounts();
+            showMessage("Cuenta agregada al plan contable.", "success");
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+      }
+
+      function showOpeningForm(host) {
+        host.innerHTML = `
+          <form id="opening-form">
+            <p class="subtle">Registra las cuentas de balance al día de inicio. El debe y el haber deben ser iguales. Esta operación se registra una sola vez.</p>
+            <div class="field"><label for="opening-date">Fecha de apertura</label><input id="opening-date" type="date" required></div>
+            <div id="opening-lines"></div>
+            <div class="toolbar"><button id="opening-add-line" class="btn btn-secondary" type="button">Añadir cuenta</button><strong id="opening-total" class="subtle">Debe Bs. 0,00 · Haber Bs. 0,00</strong></div>
+            <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar saldos de apertura</button></div>
+          </form>`;
+        $("#opening-date").value = new Date().toISOString().slice(0, 10);
+        const balanceAccounts = state.accounts.filter(account => ["asset", "liability", "equity"].includes(account.account_type) && account.active && account.status === "approved");
+        const addLine = () => {
+          const row = document.createElement("div");
+          row.className = "grid-3 opening-line";
+          row.innerHTML = `<div class="field"><label>Cuenta</label><select class="opening-account" required><option value="">Selecciona cuenta</option>${balanceAccounts.map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div><div class="field"><label>Debe (VES)</label><input class="opening-debit" type="number" min="0" step="0.01" value="0.00"></div><div class="field"><label>Haber (VES)</label><input class="opening-credit" type="number" min="0" step="0.01" value="0.00"></div>`;
+          $("#opening-lines").append(row);
+          row.querySelectorAll("input").forEach(input => input.addEventListener("input", updateTotals));
+        };
+        const updateTotals = () => {
+          let debit = 0, credit = 0;
+          document.querySelectorAll(".opening-line").forEach(row => {
+            debit += Number(row.querySelector(".opening-debit").value || 0);
+            credit += Number(row.querySelector(".opening-credit").value || 0);
+          });
+          $("#opening-total").textContent = `Debe Bs. ${money(debit)} · Haber Bs. ${money(credit)}`;
+          $("#opening-total").style.color = Math.abs(debit - credit) < 0.005 ? "var(--green)" : "var(--red)";
+        };
+        addLine(); addLine();
+        $("#opening-add-line").addEventListener("click", addLine);
+        $("#opening-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          const button = event.submitter; button.disabled = true;
+          try {
+            const lines = [...document.querySelectorAll(".opening-line")].map(row => ({
+              account_id: row.querySelector(".opening-account").value,
+              description: "Saldo inicial",
+              debit: row.querySelector(".opening-debit").value || "0",
+              credit: row.querySelector(".opening-credit").value || "0"
+            }));
+            await post(`/companies/${state.companyId}/opening-balances`, { as_of_date: $("#opening-date").value, lines });
+            await loadAccounts();
+            $("#opening-form-host").innerHTML = "";
+            showMessage("Saldos de apertura enviados; otra persona debe aprobarlos antes de contabilizar.", "success");
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+      }
+
+      async function renderContacts() {
+        if (!state.companyId) {
+          $("#view-contacts").innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        try { state.contacts = await api(`/companies/${state.companyId}/contacts`); }
+        catch (error) { showMessage(error.message); return; }
+        $("#view-contacts").innerHTML = `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Nuevo cliente o proveedor</h2><p class="subtle">El RIF vincula sus facturas, abonos y saldos pendientes.</p></div></div>
+            <form id="contact-form">
+              <div class="grid-3">
+                <div class="field"><label for="contact-rif">RIF</label><input id="contact-rif" placeholder="J-12345678-9" required></div>
+                <div class="field"><label for="contact-name">Razón social</label><input id="contact-name" required></div>
+                <div class="field"><label for="contact-kind">Tipo</label><select id="contact-kind"><option value="customer">Cliente</option><option value="supplier">Proveedor</option><option value="both">Ambos</option></select></div>
+                <div class="field"><label for="contact-email">Correo</label><input id="contact-email" type="email"></div>
+                <div class="field"><label for="contact-phone">Teléfono</label><input id="contact-phone"></div>
+                <div class="field"><label for="contact-address">Dirección</label><input id="contact-address"></div>
+              </div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar contacto</button></div>
+            </form>
+          </div>
+          <div class="panel"><div class="panel-head"><div><h2>Directorio</h2><p class="subtle">${state.contacts.length} contactos</p></div></div><div id="contacts-table" class="table-wrap"></div></div>`;
+        const wrap = $("#contacts-table");
+        if (!state.contacts.length) wrap.innerHTML = '<div class="empty">Al registrar una factura nueva el contacto también se crea automáticamente.</div>';
+        else {
+          const table = document.createElement("table");
+          table.innerHTML = "<thead><tr><th>RIF</th><th>Nombre</th><th>Tipo</th><th>Correo</th><th>Saldo neto (VES)</th></tr></thead>";
+          const tbody = document.createElement("tbody");
+          for (const contact of state.contacts) {
+            const balance = await api(`/companies/${state.companyId}/contacts/${contact.id}/balance`);
+            const row = document.createElement("tr");
+            [contact.rif, contact.name, contact.kind, contact.email || "—", money(balance.balance_ves)].forEach((value, index) => {
+              const cell = document.createElement("td"); cell.textContent = value; if (index === 4) cell.className = "number"; row.append(cell);
+            });
+            tbody.append(row);
+          }
+          table.append(tbody); wrap.replaceChildren(table);
+        }
+        $("#contact-form").addEventListener("submit", async event => {
+          event.preventDefault(); const button = event.submitter; button.disabled = true;
+          try {
+            await post(`/companies/${state.companyId}/contacts`, {
+              rif: $("#contact-rif").value, name: $("#contact-name").value.trim(),
+              kind: $("#contact-kind").value, email: $("#contact-email").value || null,
+              phone: $("#contact-phone").value, address: $("#contact-address").value
+            });
+            showMessage("Contacto registrado.", "success");
+            await renderContacts();
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+      }
+
+      async function renderPayments() {
+        if (!state.companyId) {
+          $("#view-payments").innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        let [documents, payments, bankLines] = await Promise.all([
+          api(`/companies/${state.companyId}/open-documents`),
+          api(`/companies/${state.companyId}/payments`),
+          api(`/companies/${state.companyId}/bank-statement-lines`)
+        ]);
+        const ledgerAccounts = state.accounts.filter(account => account.active && account.status === "approved");
+        $("#view-payments").innerHTML = `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Registrar pago o cobro</h2><p class="subtle">Selecciona una factura contabilizada. Los pagos de empleados requieren aprobación antes de actualizar saldos y mayor.</p></div></div>
+            ${documents.length ? "" : '<div class="alert alert-error">No hay facturas contabilizadas con saldo pendiente. Primero registra y aprueba una factura.</div>'}
+            <form id="payment-form">
+              <div class="grid-3">
+                <div class="field"><label for="payment-document">Factura pendiente</label><select id="payment-document" required><option value="">Selecciona factura</option>${documents.map(doc => `<option value="${esc(doc.id)}" data-direction="${esc(doc.direction)}" data-contact="${esc(doc.contact_id)}">${esc(doc.invoice_number)} · ${esc(doc.counterparty_name)} · saldo Bs. ${esc(money(doc.outstanding_ves))}</option>`).join("")}</select></div>
+                <div class="field"><label for="payment-date">Fecha</label><input id="payment-date" type="date" required></div>
+                <div class="field"><label for="payment-ref">Referencia</label><input id="payment-ref" maxlength="100"></div>
+                <div class="field"><label for="payment-method">Medio</label><select id="payment-method"><option value="bank">Banco</option><option value="transfer">Transferencia</option><option value="cash">Efectivo</option><option value="card">Tarjeta</option><option value="divisa">Divisa</option><option value="crypto">Criptoactivo</option><option value="other">Otro</option></select></div>
+                <div class="field"><label for="payment-amount">Monto aplicado a factura (VES)</label><input id="payment-amount" type="number" min="0.01" step="0.01" required></div>
+                <div class="field"><label for="payment-currency">Moneda entregada</label><select id="payment-currency"><option value="VES">VES</option><option value="USD">USD</option><option value="EUR">EUR</option><option value="OTHER">Otra</option></select></div>
+                <div id="payment-foreign-field" class="field hidden"><label for="payment-foreign">Monto entregado en divisa</label><input id="payment-foreign" type="number" min="0.01" step="0.01"></div>
+                <div id="payment-rate-field" class="field hidden"><label for="payment-rate">Tasa VES por unidad</label><input id="payment-rate" type="number" min="0.000001" step="0.000001"></div>
+                <div class="field"><label for="payment-cash-account">Cuenta banco/caja</label><select id="payment-cash-account" required><option value="">Selecciona cuenta</option>${ledgerAccounts.filter(account => account.account_type === "asset").map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>
+                <div id="payment-igtf-field" class="field hidden"><label class="checkbox-row"><input id="payment-igtf-applicable" type="checkbox"> IGTF aplicable a este pago</label><label for="payment-igtf-account">Cuenta IGTF</label><select id="payment-igtf-account"><option value="">Selecciona cuenta</option>${ledgerAccounts.filter(account => ["expense", "liability"].includes(account.account_type)).map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>
+              </div>
+              <div id="payment-igtf-hint" class="subtle"></div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit" ${documents.length ? "" : "disabled"}>Guardar y enviar a aprobación</button></div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Pagos y cobros recientes</h2><p class="subtle">Los movimientos en revisión no reducen el saldo hasta que sean aprobados.</p></div></div>
+            <div id="payment-list" class="table-wrap"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Conciliación bancaria manual</h2><p class="subtle">Captura el movimiento del estado bancario y relaciónalo con un pago contabilizado del mismo monto, fecha y cuenta.</p></div></div>
+            <form id="bank-line-form">
+              <div class="grid-3">
+                <div class="field"><label for="bank-account">Cuenta bancaria</label><select id="bank-account" required><option value="">Selecciona cuenta</option>${ledgerAccounts.filter(account => account.account_type === "asset").map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>
+                <div class="field"><label for="bank-date">Fecha del estado de cuenta</label><input id="bank-date" type="date" required></div>
+                <div class="field"><label for="bank-ref">Referencia bancaria</label><input id="bank-ref" required></div>
+                <div class="field"><label for="bank-description">Descripción</label><input id="bank-description"></div>
+                <div class="field"><label for="bank-amount">Monto (egresos negativos, ingresos positivos)</label><input id="bank-amount" type="number" step="0.01" required></div>
+              </div>
+              <div class="form-actions"><button class="btn btn-secondary" type="submit">Agregar movimiento bancario</button></div>
+            </form>
+            <form id="bank-import-form" class="grid" style="margin-top:22px">
+              <div class="field"><label for="bank-import-account">Cuenta bancaria para importar</label><select id="bank-import-account" required><option value="">Selecciona cuenta</option>${ledgerAccounts.filter(account => account.account_type === "asset").map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>
+              <div class="field"><label for="bank-csv">Extracto CSV (máximo 5 MB)</label><input id="bank-csv" type="file" accept=".csv,text/csv" required></div>
+              <p class="subtle span-2">Columnas admitidas: Fecha, Referencia y Monto; o Fecha, Referencia, Débito y Crédito. Admite encabezados en español/inglés y delimitador coma, punto y coma, barra o tabulación. No se conecta directamente al banco.</p>
+              <button class="btn btn-secondary" type="submit">Importar movimientos CSV</button>
+            </form>
+            <form id="reconcile-form" class="toolbar">
+              <div class="field"><label for="reconcile-line">Movimiento no conciliado</label><select id="reconcile-line" required><option value="">Selecciona movimiento</option>${bankLines.map(line => `<option value="${esc(line.id)}" data-account="${esc(line.bank_account_id)}" data-date="${esc(line.date)}">${esc(line.date)} · ${esc(line.reference)} · Bs. ${esc(money(line.amount))}</option>`).join("")}</select></div>
+              <div class="field"><label for="reconcile-payment">Pago/cobro contabilizado</label><select id="reconcile-payment" required><option value="">Selecciona pago</option>${payments.filter(payment => payment.status === "posted" && ["bank", "transfer"].includes(payment.method)).map(payment => `<option value="${esc(payment.id)}" data-account="${esc(payment.cash_account_id)}" data-date="${esc(payment.payment_date)}" data-direction="${esc(payment.direction)}" data-amount="${esc(Number(payment.amount_ves) + Number(payment.igtf_amount))}">${esc(payment.payment_date)} · ${esc(payment.reference || payment.id.slice(0, 8))} · Bs. ${esc(money(Number(payment.amount_ves) + Number(payment.igtf_amount)))} (${payment.direction === "payable" ? "Pago" : "Cobro"})</option>`).join("")}</select></div>
+              <button class="btn btn-secondary" type="submit">Conciliar</button>
+            </form>
+            <div id="reconcile-hint" class="subtle"></div>
+          </div>`;
+        $("#payment-date").value = new Date().toISOString().slice(0, 10);
+        $("#bank-date").value = new Date().toISOString().slice(0, 10);
+        const showFx = () => {
+          const foreign = $("#payment-currency").value !== "VES";
+          $("#payment-foreign-field").classList.toggle("hidden", !foreign);
+          $("#payment-rate-field").classList.toggle("hidden", !foreign);
+          $("#payment-igtf-field").classList.toggle("hidden", !foreign || !currentCompany()?.special_taxpayer);
+          $("#payment-igtf-hint").textContent = foreign && currentCompany()?.special_taxpayer ? "Marca la casilla solo cuando el supuesto legal aplique. Confirma obligación, tasa y base con tu contador." : "";
+          if (!foreign || !currentCompany()?.special_taxpayer) $("#payment-igtf-applicable").checked = false;
+          const doc = $("#payment-document").selectedOptions[0];
+          const side = doc?.dataset.direction === "purchase" ? "expense" : "liability";
+          [...$("#payment-igtf-account").options].forEach((option, index) => {
+            if (index > 0) option.hidden = option.value ? state.accounts.find(account => account.id === option.value)?.account_type !== side : false;
+          });
+        };
+        $("#payment-currency").addEventListener("change", showFx);
+        $("#payment-document").addEventListener("change", showFx);
+        $("#payment-igtf-applicable").addEventListener("change", () => {
+          $("#payment-igtf-account").required = $("#payment-igtf-applicable").checked;
+        });
+        showFx();
+        $("#payment-list").innerHTML = payments.length ? `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Monto aplicado</th><th>IGTF</th><th>Referencia</th><th>Estado</th></tr></thead><tbody>${payments.map(payment => `<tr><td>${esc(payment.payment_date)}</td><td>${payment.direction === "payable" ? "Pago a proveedor" : "Cobro a cliente"}</td><td class="number">${esc(money(payment.amount_ves))}</td><td class="number">${esc(money(payment.igtf_amount))}</td><td>${esc(payment.reference || "—")}</td><td><span class="badge">${esc(payment.status)}</span></td></tr>`).join("")}</tbody></table>` : '<div class="empty">Aún no hay pagos ni cobros.</div>';
+        $("#payment-form").addEventListener("submit", async event => {
+          event.preventDefault(); const button = event.submitter; button.disabled = true;
+          try {
+            const currency = $("#payment-currency").value;
+            const foreign = currency === "VES";
+            await post(`/companies/${state.companyId}/payments`, {
+              document_id: $("#payment-document").value,
+              payment_date: $("#payment-date").value,
+              reference: $("#payment-ref").value.trim(),
+              method: $("#payment-method").value,
+              amount_ves: $("#payment-amount").value,
+              currency,
+              foreign_amount: foreign ? null : $("#payment-foreign").value,
+              exchange_rate: foreign ? null : $("#payment-rate").value,
+              cash_account_id: $("#payment-cash-account").value,
+              igtf_applicable: $("#payment-igtf-applicable").checked,
+              igtf_account_id: $("#payment-igtf-applicable").checked ? $("#payment-igtf-account").value || null : null
+            });
+            showMessage("Pago/cobro guardado y enviado a revisión.", "success");
+            await renderPayments();
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        $("#bank-line-form").addEventListener("submit", async event => {
+          event.preventDefault(); const button = event.submitter; button.disabled = true;
+          try {
+            await post(`/companies/${state.companyId}/bank-statement-lines`, {
+              bank_account_id: $("#bank-account").value,
+              statement_date: $("#bank-date").value,
+              external_reference: $("#bank-ref").value.trim(),
+              description: $("#bank-description").value.trim(),
+              amount: $("#bank-amount").value
+            });
+            showMessage("Movimiento bancario agregado.", "success");
+            await renderPayments();
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        $("#bank-import-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          const button = event.submitter;
+          button.disabled = true;
+          try {
+            const form = new FormData();
+            form.append("bank_account_id", $("#bank-import-account").value);
+            form.append("file", $("#bank-csv").files[0]);
+            const result = await api(`/companies/${state.companyId}/bank-statement-lines/import-csv`, { method: "POST", body: form });
+            showMessage(`Importados ${result.created}; duplicados ${result.duplicates}; rechazados ${result.rejected.length}.`, result.rejected.length ? "error" : "success");
+            if (result.rejected.length) alert(result.rejected.slice(0, 20).map(item => `Fila ${item.row}: ${item.error}`).join("\n"));
+            await renderPayments();
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        $("#reconcile-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            await api(`/companies/${state.companyId}/bank-statement-lines/${$("#reconcile-line").value}/match/${$("#reconcile-payment").value}`, { method: "POST" });
+            showMessage("Movimiento conciliado.", "success");
+            await renderPayments();
+          } catch (error) { showMessage(error.message); }
+        });
+      }
+
+      function currentRole() {
+        return state.user?.is_superuser
+          ? "admin"
+          : state.user?.memberships?.find(item => item.company_id === state.companyId)?.role || "";
+      }
+
+      async function renderReview() {
+        if (!state.companyId) {
+          $("#view-review").innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        const [queue, journals] = await Promise.all([
+          api(`/companies/${state.companyId}/review-queue`),
+          api(`/companies/${state.companyId}/journals`)
+        ]);
+        const canApprove = ["admin", "accountant"].includes(currentRole());
+        $("#view-review").innerHTML = `
+          <div class="alert alert-error">La persona que prepara una cuenta o movimiento no puede aprobarlo. Un segundo contador o administrador debe revisarlo antes de habilitar la cuenta o contabilizarlo.</div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Asientos manuales</h2><p class="subtle">Crea un borrador balanceado y envíalo a otro administrador o contador para aprobación.</p></div></div>
+            <form id="manual-journal-form">
+              <div class="grid-3">
+                <div class="field"><label for="manual-date">Fecha</label><input id="manual-date" type="date" required></div>
+                <div class="field"><label for="manual-ref">Referencia</label><input id="manual-ref"></div>
+                <div class="field"><label for="manual-description">Descripción</label><input id="manual-description" required></div>
+              </div>
+              <div id="manual-lines"></div>
+              <div class="toolbar"><button id="manual-add-line" class="btn btn-secondary" type="button">Añadir línea</button><span id="manual-total" class="subtle"></span></div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit" ${["admin", "accountant"].includes(currentRole()) ? "" : "disabled"}>Guardar borrador y enviar</button></div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Pendiente de aprobación</h2><p class="subtle">Cuentas nuevas, facturas, pagos y asientos requieren revisión por una persona distinta a quien los preparó.</p></div></div>
+            <div id="review-table" class="table-wrap"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Asientos contabilizados</h2><p class="subtle">Los asientos revertidos se conservan para trazabilidad.</p></div></div>
+            <div id="posted-table" class="table-wrap"></div>
+          </div>`;
+        $("#manual-date").value = new Date().toISOString().slice(0, 10);
+        const lineAccounts = state.accounts.filter(account => account.active && account.status === "approved");
+        const addLine = () => {
+          const row = document.createElement("div");
+          row.className = "grid-3 manual-line";
+          row.innerHTML = `<div class="field"><label>Cuenta</label><select class="manual-account" required><option value="">Selecciona cuenta</option>${lineAccounts.map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div><div class="field"><label>Debe (VES)</label><input class="manual-debit" type="number" min="0" step="0.01" value="0.00"></div><div class="field"><label>Haber (VES)</label><input class="manual-credit" type="number" min="0" step="0.01" value="0.00"></div>`;
+          $("#manual-lines").append(row);
+          row.querySelectorAll("input").forEach(input => input.addEventListener("input", updateTotals));
+        };
+        function updateTotals() {
+          let debit = 0, credit = 0;
+          document.querySelectorAll(".manual-line").forEach(row => {
+            debit += Number(row.querySelector(".manual-debit").value || 0);
+            credit += Number(row.querySelector(".manual-credit").value || 0);
+          });
+          $("#manual-total").textContent = `Debe Bs. ${money(debit)} · Haber Bs. ${money(credit)}`;
+          $("#manual-total").style.color = Math.abs(debit - credit) < 0.005 ? "var(--green)" : "var(--red)";
+        }
+        addLine(); addLine();
+        $("#manual-add-line").addEventListener("click", addLine);
+        $("#manual-journal-form").addEventListener("submit", async event => {
+          event.preventDefault(); const button = event.submitter; button.disabled = true;
+          try {
+            const lines = [...document.querySelectorAll(".manual-line")].map(row => ({
+              account_id: row.querySelector(".manual-account").value,
+              debit: row.querySelector(".manual-debit").value || "0",
+              credit: row.querySelector(".manual-credit").value || "0",
+              description: $("#manual-description").value.trim()
+            }));
+            const journal = await post(`/companies/${state.companyId}/journals`, {
+              entry_date: $("#manual-date").value,
+              reference: $("#manual-ref").value.trim(),
+              description: $("#manual-description").value.trim(),
+              lines
+            });
+            await api(`/companies/${state.companyId}/journals/${journal.id}/submit`, { method: "POST" });
+            showMessage("Asiento enviado a aprobación.", "success");
+            await renderReview();
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        const pendingRows = [
+          ...queue.documents.map(item => ({
+            id: item.id, kind: "document", date: item.date,
+            detail: `${item.direction === "purchase" ? "Factura compra" : "Factura venta"} ${item.invoice_number} · ${item.counterparty} · Bs. ${money(item.total)}`,
+            createdBy: item.created_by
+          })),
+          ...queue.payments.map(item => ({
+            id: item.id, kind: "payment", date: item.date,
+            detail: `${item.direction === "payable" ? "Pago" : "Cobro"} ${item.reference} · Bs. ${money(item.amount)}`,
+            createdBy: item.created_by
+          })),
+          ...queue.journals.map(item => ({
+            id: item.id, kind: "journal", date: item.date, detail: item.description, createdBy: item.created_by
+          })),
+          ...queue.accounts.map(item => ({
+            id: item.id, kind: "account", date: item.date,
+            detail: `Propuesta de cuenta ${item.code} · ${item.name}`, createdBy: item.created_by
+          }))
+        ];
+        if (!pendingRows.length) $("#review-table").innerHTML = '<div class="empty">No hay documentos pendientes de revisión.</div>';
+        else {
+          const table = document.createElement("table");
+          table.innerHTML = `<thead><tr><th>Fecha</th><th>Detalle</th><th>Acción</th></tr></thead>`;
+          const tbody = document.createElement("tbody");
+          pendingRows.forEach(item => {
+            const row = document.createElement("tr");
+            const dateCell = document.createElement("td"); dateCell.textContent = item.date;
+            const detailCell = document.createElement("td"); detailCell.textContent = item.detail;
+            const actionCell = document.createElement("td");
+            const createdBy = item.createdBy || "";
+            if (canApprove && createdBy !== state.user.id) {
+              const button = document.createElement("button"); button.className = "btn btn-primary"; button.textContent = item.kind === "account" ? "Aprobar cuenta" : "Aprobar y contabilizar";
+              button.addEventListener("click", async () => {
+                button.disabled = true;
+                try {
+                  const path = item.kind === "account"
+                    ? `/companies/${state.companyId}/accounts/${item.id}/approve`
+                    : item.kind === "document"
+                    ? `/companies/${state.companyId}/tax-documents/${item.id}/approve`
+                    : item.kind === "payment"
+                      ? `/companies/${state.companyId}/payments/${item.id}/approve`
+                      : `/companies/${state.companyId}/journals/${item.id}/post`;
+                  await api(path, { method: "POST" });
+                  showMessage(item.kind === "account" ? "Cuenta aprobada y disponible para contabilizaciones." : "Operación aprobada y contabilizada.", "success");
+                  await loadAccounts();
+                  await renderReview();
+                } catch (error) { showMessage(error.message); button.disabled = false; }
+              });
+              actionCell.append(button);
+            } else if (createdBy === state.user.id) {
+              actionCell.textContent = "Pendiente de revisión por otro usuario";
+            } else {
+              actionCell.textContent = "Requiere rol administrador o contador";
+            }
+            row.append(dateCell, detailCell, actionCell); tbody.append(row);
+          });
+          table.append(tbody); $("#review-table").replaceChildren(table);
+        }
+        const postedRows = journals.filter(journal => ["posted", "reversed"].includes(journal.status) && journal.source_type !== "reversal");
+        if (!postedRows.length) $("#posted-table").innerHTML = '<div class="empty">Aún no hay asientos contabilizados.</div>';
+        else {
+          const table = document.createElement("table");
+          table.innerHTML = "<thead><tr><th>Fecha</th><th>Referencia</th><th>Descripción</th><th>Estado</th><th></th></tr></thead>";
+          const tbody = document.createElement("tbody");
+          postedRows.forEach(journal => {
+            const row = document.createElement("tr");
+            [journal.entry_date, journal.reference, journal.description, journal.status].forEach(value => {
+              const cell = document.createElement("td"); cell.textContent = value || "—"; row.append(cell);
+            });
+            const action = document.createElement("td");
+            if (currentRole() === "admin" && journal.status === "posted" && !["opening", "reversal"].includes(journal.source_type)) {
+              const button = document.createElement("button"); button.className = "btn btn-danger"; button.textContent = "Reversar";
+              button.addEventListener("click", async () => {
+                if (!confirm("¿Reversar este asiento? Se creará un asiento inverso y el original se conservará.")) return;
+                try {
+                  const endpoint = journal.source_type === "tax_document"
+                    ? `/companies/${state.companyId}/tax-documents/${journal.source_id}/reverse`
+                    : journal.source_type === "payment"
+                      ? `/companies/${state.companyId}/payments/${journal.source_id}/reverse`
+                      : `/companies/${state.companyId}/journals/${journal.id}/reverse`;
+                  await api(endpoint, { method: "POST" });
+                  showMessage("Asiento reversado con trazabilidad.", "success");
+                  await renderReview();
+                } catch (error) { showMessage(error.message); }
+              });
+              action.append(button);
+            }
+            row.append(action); tbody.append(row);
+          });
+          table.append(tbody); $("#posted-table").replaceChildren(table);
+        }
+      }
+
+      function renderDocuments() {
+        if (!state.companyId) {
+          $("#view-documents").innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        const noAccounts = !state.accounts.length;
+        $("#view-documents").innerHTML = `
+          ${noAccounts ? '<div class="alert alert-error">Antes de registrar facturas, crea las cuentas de gasto/ingreso, IVA y proveedores/clientes en “Plan de cuentas”.</div>' : ""}
+          <div class="panel">
+            <div class="panel-head"><div><h2>Registrar factura</h2><p class="subtle">Se guarda junto a un asiento pendiente de revisión y aprobación.</p></div></div>
+            <form id="document-form">
+              <div class="grid-3">
+                <div class="field"><label for="doc-direction">Operación</label><select id="doc-direction"><option value="purchase">Compra</option><option value="sale">Venta</option></select></div>
+                <div class="field"><label for="doc-date">Fecha</label><input id="doc-date" type="date" required></div>
+                <div class="field"><label for="doc-rif">RIF del proveedor/cliente</label><input id="doc-rif" placeholder="J-12345678-9" required></div>
+                <div class="field"><label for="doc-name">Razón social</label><input id="doc-name" required></div>
+                <div class="field"><label for="doc-invoice">N.º de factura</label><input id="doc-invoice" maxlength="30" required></div>
+                <div class="field"><label for="doc-control">N.º de control</label><input id="doc-control" maxlength="30"></div>
+                <div class="field"><label for="doc-description">Descripción comercial</label><input id="doc-description" maxlength="300" placeholder="Servicios profesionales, productos..."></div>
+                <div class="field"><label for="doc-base">Base imponible (VES)</label><input id="doc-base" type="number" min="0" step="0.01" required></div>
+                <div class="field"><label for="doc-exempt">Monto exento (VES)</label><input id="doc-exempt" type="number" min="0" step="0.01" value="0"></div>
+                <div class="field"><label for="doc-vat-rate">Alícuota IVA (%)</label><input id="doc-vat-rate" type="number" min="0" max="100" step="0.01" value="16" required></div>
+                <div id="doc-withholding-field" class="field"><label for="doc-withholding">Retención IVA (%)</label><input id="doc-withholding" type="number" min="0" max="100" step="0.01" value="0"></div>
+                ${accountSelect("doc-base-account", "Cuenta de gasto/ingreso", ["expense", "asset", "revenue"])}
+                ${accountSelect("doc-vat-account", "Cuenta IVA crédito/débito", ["asset", "liability"])}
+                ${accountSelect("doc-counterparty-account", "Cuenta de proveedor/cliente", ["liability", "asset"])}
+                ${accountSelect("doc-withholding-account", "Cuenta de IVA retenido (si aplica)", ["liability", "asset"], false)}
+              </div>
+              <div class="form-actions"><button class="btn btn-primary" type="submit" ${noAccounts ? "disabled" : ""}>Guardar factura y contabilizar</button></div>
+            </form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Libro fiscal</h2><p class="subtle">Descarga el archivo de control del período seleccionado.</p></div></div>
+            <form id="export-form" class="toolbar">
+              <div class="field small"><label for="export-direction">Libro</label><select id="export-direction"><option value="purchase">Compras</option><option value="sale">Ventas</option></select></div>
+              <div class="field small"><label for="export-period">Período AAAAMM</label><input id="export-period" pattern="[0-9]{6}" maxlength="6" value="${monthNow()}" required></div>
+              <button class="btn btn-secondary" type="submit">Descargar CSV</button>
+            </form>
+          </div>`;
+        const invoiceSection = document.createElement("div");
+        invoiceSection.className = "panel";
+        invoiceSection.innerHTML = `<div class="panel-head"><div><h2>Facturas comerciales de venta</h2><p class="subtle">Previsualiza la cuenta comercial con el logo de la empresa e intenta enviarla por correo al cliente. No es una factura fiscal ni transmite al SENIAT.</p></div></div>
+          ${currentRole() === "admin" ? `<form id="company-branding-form" class="grid">
+            <div class="field"><label for="company-contact-email">Correo de la empresa</label><input id="company-contact-email" type="email"></div>
+            <div class="field"><label for="company-contact-phone">Teléfono</label><input id="company-contact-phone" maxlength="40"></div>
+            <div class="field"><label for="company-logo">Logo (PNG/JPEG/WebP, hasta 1 MB)</label><input id="company-logo" type="file" accept="image/png,image/jpeg,image/webp"></div>
+            <div class="form-actions"><button class="btn btn-secondary" type="submit">Guardar marca y logo</button></div>
+          </form>` : ""}
+          <div id="commercial-invoices" class="table-wrap"><div class="empty">Cargando facturas de venta...</div></div>`;
+        $("#view-documents").append(invoiceSection);
+        if (currentRole() === "admin") {
+          const company = currentCompany();
+          $("#company-contact-email").value = company?.contact_email || "";
+          $("#company-contact-phone").value = company?.contact_phone || "";
+          $("#company-branding-form").addEventListener("submit", async event => {
+            event.preventDefault();
+            try {
+              await api(`/companies/${state.companyId}/branding`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  contact_email: $("#company-contact-email").value.trim() || null,
+                  contact_phone: $("#company-contact-phone").value.trim()
+                })
+              });
+              const logo = $("#company-logo").files[0];
+              if (logo) {
+                const form = new FormData();
+                form.append("file", logo);
+                await api(`/companies/${state.companyId}/branding/logo`, { method: "POST", body: form });
+              }
+              showMessage("Datos de contacto y logo guardados.", "success");
+            } catch (error) { showMessage(error.message); }
+          });
+        }
+        api(`/companies/${state.companyId}/tax-documents?direction=sale`).then(documents => {
+          $("#commercial-invoices").innerHTML = documents.length
+            ? `<table><thead><tr><th>Fecha</th><th>Factura</th><th>Cliente</th><th>Total</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${documents.map(document => `<tr><td>${esc(document.document_date)}</td><td>${esc(document.invoice_number)}</td><td>${esc(document.counterparty_name)}</td><td>VES ${money(document.total_amount)}</td><td>${esc(document.status)}</td><td><button class="btn btn-secondary commercial-preview" data-id="${esc(document.id)}">Vista imprimible</button> ${document.status === "posted" ? `<button class="btn btn-secondary commercial-send" data-id="${esc(document.id)}">Enviar por correo</button>` : ""}</td></tr>`).join("")}</tbody></table>`
+            : '<div class="empty">Aún no hay facturas de venta registradas.</div>';
+          document.querySelectorAll(".commercial-preview").forEach(button => button.addEventListener("click", async () => {
+            try {
+              const response = await fetch(`/companies/${state.companyId}/tax-documents/${button.dataset.id}/commercial-invoice.html`, { headers: { Authorization: `Bearer ${state.token}` } });
+              if (!response.ok) throw new Error("No se pudo cargar la vista de la factura comercial.");
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(await response.blob());
+              link.target = "_blank"; link.rel = "noopener"; link.click();
+              URL.revokeObjectURL(link.href);
+            } catch (error) { showMessage(error.message); }
+          }));
+          document.querySelectorAll(".commercial-send").forEach(button => button.addEventListener("click", async () => {
+            if (!confirm("¿Enviar por correo esta cuenta comercial? No es una factura fiscal electrónica.")) return;
+            try {
+              await post(`/companies/${state.companyId}/tax-documents/${button.dataset.id}/send-invoice`, {});
+              showMessage("Cuenta comercial enviada al correo del cliente.", "success");
+            } catch (error) { showMessage(error.message); }
+          }));
+        }).catch(error => { $("#commercial-invoices").textContent = error.message; });
+        $("#doc-date").value = new Date().toISOString().slice(0, 10);
+        const updateDocumentForm = () => {
+          $("#doc-withholding-field").classList.toggle("hidden", $("#doc-direction").value === "sale");
+          const direction = $("#doc-direction").value;
+          const choices = {
+            "doc-base-account": direction === "purchase" ? ["asset", "expense"] : ["revenue"],
+            "doc-vat-account": direction === "purchase" ? ["asset"] : ["liability"],
+            "doc-counterparty-account": direction === "purchase" ? ["liability"] : ["asset"],
+            "doc-withholding-account": direction === "purchase" ? ["liability"] : ["asset"]
+          };
+          Object.entries(choices).forEach(([id, types]) => {
+            const select = $(`#${id}`);
+            const previous = select.value;
+            select.replaceChildren(new Option("Selecciona una cuenta", ""));
+            state.accounts.filter(account => account.status === "approved" && account.active && types.includes(account.account_type)).forEach(account => {
+              select.add(new Option(`${account.code} · ${account.name}`, account.id));
+            });
+            if ([...select.options].some(option => option.value === previous)) select.value = previous;
+          });
+        };
+        $("#doc-direction").addEventListener("change", updateDocumentForm);
+        updateDocumentForm();
+        $("#document-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          const button = event.submitter; button.disabled = true;
+          try {
+            const result = await post(`/companies/${state.companyId}/tax-documents`, {
+              direction: $("#doc-direction").value,
+              document_date: $("#doc-date").value,
+              counterparty_rif: $("#doc-rif").value,
+              counterparty_name: $("#doc-name").value.trim(),
+              invoice_number: $("#doc-invoice").value.trim(),
+              control_number: $("#doc-control").value.trim(),
+              commercial_description: $("#doc-description").value.trim(),
+              base_amount: $("#doc-base").value,
+              exempt_amount: $("#doc-exempt").value || "0",
+              vat_rate_percent: $("#doc-vat-rate").value,
+              vat_withholding_percent: $("#doc-direction").value === "purchase" ? ($("#doc-withholding").value || "0") : "0",
+              payment_currency: "VES",
+              payment_amount: null,
+              exchange_rate: null,
+              igtf_applicable: false,
+              igtf_rate_percent: $("#doc-igtf-rate").value || "3",
+              base_account_id: $("#doc-base-account").value,
+              vat_account_id: $("#doc-vat-account").value,
+              counterparty_account_id: $("#doc-counterparty-account").value,
+              withholding_account_id: $("#doc-withholding-account").value || null
+            });
+            const type = result.direction === "purchase" ? "Compra" : "Venta";
+            showMessage(`${type} guardada para aprobación. IVA: Bs. ${money(result.vat_amount)} · Retención: Bs. ${money(result.vat_withheld)}.`, "success");
+            $("#doc-invoice").value = ""; $("#doc-control").value = ""; $("#doc-description").value = "";
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        $("#export-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            const direction = $("#export-direction").value;
+            const period = $("#export-period").value;
+            const response = await fetch(`/companies/${state.companyId}/tax-books/${direction}.csv?period=${encodeURIComponent(period)}`, { headers: { Authorization: `Bearer ${state.token}` } });
+            if (!response.ok) {
+              const data = await response.json().catch(() => ({}));
+              throw new Error(data.detail || "No se pudo generar el libro.");
+            }
+            const blob = await response.blob();
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `libro-${direction}-${period}.csv`;
+            link.click();
+            URL.revokeObjectURL(link.href);
+          } catch (error) { showMessage(error.message); }
+        });
+      }
+
+      async function renderVault() {
+        const section = $("#view-vault");
+        if (!state.companyId) {
+          section.innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        section.innerHTML = '<div class="panel"><p class="subtle">Cargando documentos...</p></div>';
+        try {
+          const documents = await api(`/companies/${state.companyId}/documents`);
+          const role = state.user?.memberships?.find(item => item.company_id === state.companyId)?.role;
+          const canManage = state.user?.is_superuser || role === "admin" || role === "accountant";
+          section.innerHTML = `
+            ${canManage ? `<div class="panel">
+              <div class="panel-head"><div><h2>Archivos de la empresa</h2><p class="subtle">Guarda facturas recibidas, constancias, estados bancarios y otros soportes. Cada archivo admite hasta 10 MB.</p></div></div>
+              <form id="vault-upload-form" class="grid">
+                <div class="field"><label for="vault-file">Archivo</label><input id="vault-file" name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.webp,.txt,.docx,.xlsx" required></div>
+                <div class="field"><label for="vault-category">Categoría</label><select id="vault-category" name="category"><option value="invoice">Factura</option><option value="tax">Impuestos</option><option value="bank">Banco</option><option value="contract">Contrato</option><option value="receipt">Comprobante</option><option value="other">Otro</option></select></div>
+                <div class="field span-2"><label for="vault-notes">Nota (opcional)</label><input id="vault-notes" name="notes" maxlength="1000"></div>
+                <div class="form-actions"><button class="btn btn-primary" type="submit">Guardar archivo</button></div>
+              </form>
+            </div>` : ""}
+            <div class="panel"><div class="panel-head"><div><h2>Documentos guardados</h2><p class="subtle">${documents.length} archivo(s). OCR de factura opcional requiere proveedor Azure configurado.</p></div></div>
+              <div class="table-wrap">${documents.length ? `<table><thead><tr><th>Archivo</th><th>Categoría</th><th>Nota</th><th>Tamaño</th><th>Fecha</th><th>Acciones</th></tr></thead><tbody>${documents.map(item => `<tr><td>${esc(item.filename)}</td><td>${esc(item.category)}</td><td>${esc(item.notes || "—")}</td><td>${(item.size_bytes / 1024).toFixed(1)} KB</td><td>${esc(new Date(item.uploaded_at).toLocaleDateString("es-VE"))}</td><td><button class="btn btn-secondary vault-download" data-id="${esc(item.id)}" data-name="${esc(item.filename)}">Descargar</button> ${canManage && /\.(pdf|jpe?g|png|webp)$/i.test(item.filename) ? `<button class="btn btn-secondary vault-ocr" data-id="${esc(item.id)}">Extraer con OCR</button>` : ""} ${canManage && (state.user?.is_superuser || role === "admin" || item.uploaded_by === state.user?.id) ? `<button class="btn btn-danger vault-archive" data-id="${esc(item.id)}">Archivar</button>` : ""}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Todavía no hay documentos guardados.</div>'}</div>
+              <p class="subtle">El archivo se guarda en la base de datos y queda asociado a esta empresa. El acceso requiere pertenecer a la empresa.</p>
+            </div>`;
+          $("#vault-upload-form")?.addEventListener("submit", async event => {
+            event.preventDefault();
+            const button = event.submitter;
+            button.disabled = true;
+            try {
+              const form = new FormData(event.currentTarget);
+              await api(`/companies/${state.companyId}/documents`, { method: "POST", body: form });
+              showMessage("Documento guardado.", "success");
+              await renderVault();
+            } catch (error) { showMessage(error.message); }
+            finally { button.disabled = false; }
+          });
+          section.querySelectorAll(".vault-download").forEach(button => button.addEventListener("click", async () => {
+            try {
+              const response = await fetch(`/companies/${state.companyId}/documents/${button.dataset.id}/download`, { headers: { Authorization: `Bearer ${state.token}` } });
+              if (!response.ok) throw new Error("No se pudo descargar el documento.");
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(await response.blob());
+              link.download = button.dataset.name;
+              link.click();
+              URL.revokeObjectURL(link.href);
+            } catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".vault-archive").forEach(button => button.addEventListener("click", async () => {
+            if (!confirm("¿Archivar este documento? Dejará de estar disponible en la lista.")) return;
+            try {
+              await api(`/companies/${state.companyId}/documents/${button.dataset.id}`, { method: "DELETE" });
+              showMessage("Documento archivado.", "success");
+              await renderVault();
+            } catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".vault-ocr").forEach(button => button.addEventListener("click", async () => {
+            if (!confirm("¿Enviar este archivo al proveedor OCR configurado? Los campos detectados requerirán revisión.")) return;
+            try {
+              const extraction = await post(`/companies/${state.companyId}/documents/${button.dataset.id}/extract-invoice`, {});
+              showMessage(`Extracción lista para revisión (${extraction.id}).`, "success");
+              await renderVault();
+            } catch (error) { showMessage(error.message); }
+          }));
+          const extractions = await api(`/companies/${state.companyId}/document-extractions`);
+          const extractionPanel = document.createElement("div");
+          extractionPanel.className = "panel";
+          extractionPanel.innerHTML = `<div class="panel-head"><div><h2>Resultados OCR</h2><p class="subtle">Sugerencias automáticas; no contabilizadas ni validadas fiscalmente.</p></div></div>
+            <div class="table-wrap">${extractions.length ? `<table><thead><tr><th>Fecha</th><th>Proveedor</th><th>Campos extraídos</th><th>Estado</th><th>Acción</th></tr></thead><tbody>${extractions.map(item => `<tr><td>${esc(new Date(item.created_at).toLocaleString("es-VE"))}</td><td>${esc(item.provider)}</td><td><code>${esc(item.fields_json)}</code></td><td>${esc(item.status)}</td><td>${item.status === "pending_review" && item.created_by !== state.user?.id && canManage ? `<button class="btn btn-primary ocr-approve" data-id="${esc(item.id)}">Validar</button> <button class="btn btn-danger ocr-reject" data-id="${esc(item.id)}">Rechazar</button>` : ""}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">No se han procesado documentos con OCR.</div>'}</div>`;
+          section.append(extractionPanel);
+          section.querySelectorAll(".ocr-approve,.ocr-reject").forEach(button => button.addEventListener("click", async () => {
+            try {
+              const decision = button.classList.contains("ocr-approve") ? "approve" : "reject";
+              await post(`/companies/${state.companyId}/document-extractions/${button.dataset.id}/decision`, { decision });
+              showMessage("Resultado OCR revisado.", "success");
+              await renderVault();
+            } catch (error) { showMessage(error.message); }
+          }));
+        } catch (error) {
+          section.innerHTML = `<div class="panel"><div class="alert alert-error">${esc(error.message)}</div></div>`;
+        }
+      }
+
+      async function renderPersonal() {
+        const section = $("#view-personal");
+        const localDate = date => `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+        const today = new Date();
+        const month = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}`;
+        const weekStart = new Date(today);
+        weekStart.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+        const weekEnd = new Date(weekStart);
+        weekEnd.setDate(weekStart.getDate() + 6);
+        section.innerHTML = `
+          <div class="alert alert-success">Este módulo es privado de tu usuario y no se incorpora a los libros, impuestos ni reportes de las empresas.</div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Resumen personal</h2><p class="subtle">Ingresos, gastos y saldo neto por moneda; no se convierten entre sí.</p></div></div>
+            <div class="field small"><label for="personal-period">Mes</label><input id="personal-period" type="month" value="${month}"></div>
+            <div id="personal-summary" class="metric-row"></div>
+          </div>
+          <div class="grid">
+            <div class="panel"><div class="panel-head"><div><h2>Registrar movimiento</h2><p class="subtle">Agrega ingresos o gastos personales.</p></div></div>
+              <form id="personal-transaction-form">
+                <div class="grid">
+                  <div class="field"><label for="personal-kind">Tipo</label><select id="personal-kind"><option value="expense">Gasto</option><option value="income">Ingreso</option></select></div>
+                  <div class="field"><label for="personal-date">Fecha</label><input id="personal-date" type="date" value="${localDate(today)}" required></div>
+                  <div class="field"><label for="personal-category">Categoría</label><input id="personal-category" maxlength="60" placeholder="Ej.: alimentación" required></div>
+                  <div class="field"><label for="personal-amount">Monto</label><input id="personal-amount" type="number" min="0.01" step="0.01" required></div>
+                  <div class="field"><label for="personal-currency">Moneda</label><select id="personal-currency"><option>VES</option><option>USD</option><option>EUR</option></select></div>
+                  <div class="field"><label for="personal-description">Detalle</label><input id="personal-description" maxlength="300"></div>
+                </div>
+                <button class="btn btn-primary" type="submit">Guardar movimiento</button>
+              </form>
+            </div>
+            <div class="panel"><div class="panel-head"><div><h2>Plan de la semana</h2><p class="subtle">${localDate(weekStart)} a ${localDate(weekEnd)}</p></div></div>
+              <form id="personal-plan-form">
+                <div class="field"><label for="personal-plan-date">Fecha</label><input id="personal-plan-date" type="date" value="${localDate(today)}" required></div>
+                <div class="field"><label for="personal-plan-title">Actividad</label><input id="personal-plan-title" maxlength="200" required></div>
+                <div class="field"><label for="personal-plan-notes">Nota</label><input id="personal-plan-notes" maxlength="1000"></div>
+                <button class="btn btn-primary" type="submit">Agregar a mi semana</button>
+              </form>
+            </div>
+          </div>
+          <div class="panel"><div class="panel-head"><div><h2>Movimientos del mes</h2></div></div><div id="personal-transactions" class="table-wrap"></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Actividades de la semana</h2></div></div><div id="personal-plans" class="table-wrap"></div></div>`;
+
+        const loadData = async () => {
+          const selectedMonth = $("#personal-period").value;
+          if (!/^\d{4}-\d{2}$/.test(selectedMonth)) return;
+          const period = selectedMonth.replace("-", "");
+          const [overview, transactions, plans] = await Promise.all([
+            api(`/personal/overview?period=${period}`),
+            api(`/personal/transactions?period=${period}`),
+            api(`/personal/plans?start_date=${localDate(weekStart)}&end_date=${localDate(weekEnd)}`)
+          ]);
+          const totals = Object.entries(overview.totals);
+          $("#personal-summary").innerHTML = totals.length
+            ? totals.map(([currency, values]) => `<div class="metric"><strong>${esc(currency)} ${money(values.net)}</strong><span>Saldo neto · Ingresos ${money(values.income)} · Gastos ${money(values.expense)}</span></div>`).join("")
+            : '<div class="empty">No hay movimientos para este mes.</div>';
+          $("#personal-transactions").innerHTML = transactions.length
+            ? `<table><thead><tr><th>Fecha</th><th>Tipo</th><th>Categoría</th><th>Detalle</th><th>Monto</th><th></th></tr></thead><tbody>${transactions.map(item => `<tr><td>${esc(item.transaction_date)}</td><td>${item.kind === "income" ? "Ingreso" : "Gasto"}</td><td>${esc(item.category)}</td><td>${esc(item.description || "—")}</td><td>${esc(item.currency)} ${money(item.amount)}</td><td><button class="btn btn-secondary personal-transaction-archive" data-id="${esc(item.id)}">Archivar</button></td></tr>`).join("")}</tbody></table>`
+            : '<div class="empty">No hay movimientos registrados para este mes.</div>';
+          $("#personal-plans").innerHTML = plans.length
+            ? `<table><thead><tr><th>Fecha</th><th>Actividad</th><th>Nota</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${plans.map(item => `<tr><td>${esc(item.planned_date)}</td><td>${esc(item.title)}</td><td>${esc(item.notes || "—")}</td><td>${item.status === "done" ? "Completada" : "Pendiente"}</td><td>${item.status === "open" ? `<button class="btn btn-secondary personal-plan-done" data-id="${esc(item.id)}">Completar</button>` : ""} <button class="btn btn-danger personal-plan-archive" data-id="${esc(item.id)}">Archivar</button></td></tr>`).join("")}</tbody></table>`
+            : '<div class="empty">No hay actividades planificadas para esta semana.</div>';
+          section.querySelectorAll(".personal-transaction-archive").forEach(button => button.addEventListener("click", async () => {
+            try { await post(`/personal/transactions/${button.dataset.id}/archive`, {}); await loadData(); }
+            catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".personal-plan-done").forEach(button => button.addEventListener("click", async () => {
+            try { await api(`/personal/plans/${button.dataset.id}`, { method: "PATCH", body: JSON.stringify({ status: "done" }) }); await loadData(); }
+            catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".personal-plan-archive").forEach(button => button.addEventListener("click", async () => {
+            try { await api(`/personal/plans/${button.dataset.id}`, { method: "DELETE" }); await loadData(); }
+            catch (error) { showMessage(error.message); }
+          }));
+        };
+        $("#personal-period").addEventListener("change", () => loadData().catch(error => showMessage(error.message)));
+        $("#personal-transaction-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            await post("/personal/transactions", {
+              transaction_date: $("#personal-date").value,
+              kind: $("#personal-kind").value,
+              category: $("#personal-category").value.trim(),
+              description: $("#personal-description").value.trim(),
+              amount: $("#personal-amount").value,
+              currency: $("#personal-currency").value
+            });
+            $("#personal-transaction-form").reset();
+            $("#personal-date").value = localDate(new Date());
+            await loadData();
+            showMessage("Movimiento personal guardado.", "success");
+          } catch (error) { showMessage(error.message); }
+        });
+        $("#personal-plan-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            await post("/personal/plans", {
+              planned_date: $("#personal-plan-date").value,
+              title: $("#personal-plan-title").value.trim(),
+              notes: $("#personal-plan-notes").value.trim()
+            });
+            $("#personal-plan-form").reset();
+            $("#personal-plan-date").value = localDate(new Date());
+            await loadData();
+            showMessage("Actividad agregada a tu planificación.", "success");
+          } catch (error) { showMessage(error.message); }
+        });
+        loadData().catch(error => showMessage(error.message));
+      }
+
+      async function renderProfessional() {
+        const section = $("#view-professional");
+        if (state.user?.license_role !== "accountant") {
+          section.innerHTML = '<div class="panel"><div class="alert alert-error">Este módulo requiere una licencia activa de contador.</div></div>';
+          return;
+        }
+        section.innerHTML = `<div class="alert alert-success">Cartera privada de tu usuario contador. Clientes y honorarios aquí registrados no se mezclan con los libros contables de las empresas ni son comprobantes fiscales del SENIAT.</div>
+          <div class="grid">
+            <div class="panel"><div class="panel-head"><div><h2>Agregar cliente profesional</h2></div></div>
+              <form id="accountant-client-form">
+                <div class="field"><label for="portfolio-rif">RIF</label><input id="portfolio-rif" placeholder="J-12345678-9" required></div>
+                <div class="field"><label for="portfolio-name">Razón social / nombre</label><input id="portfolio-name" required></div>
+                <div class="field"><label for="portfolio-email">Correo</label><input id="portfolio-email" type="email"></div>
+                <div class="field"><label for="portfolio-phone">Teléfono</label><input id="portfolio-phone"></div>
+                <div class="field"><label for="portfolio-address">Dirección</label><input id="portfolio-address"></div>
+                <div class="field"><label for="portfolio-notes">Notas</label><input id="portfolio-notes"></div>
+                <button class="btn btn-primary" type="submit">Agregar cliente</button>
+              </form>
+            </div>
+            <div class="panel"><div class="panel-head"><div><h2>Crear cuenta de honorarios</h2></div></div>
+              <form id="accountant-fee-form">
+                <div class="field"><label for="fee-client">Cliente</label><select id="fee-client" required></select></div>
+                <div class="field"><label for="fee-reference">Referencia interna</label><input id="fee-reference" maxlength="30" required></div>
+                <div class="field"><label for="fee-service">Servicio</label><input id="fee-service" maxlength="300" required></div>
+                <div class="field"><label for="fee-period">Período (opcional)</label><input id="fee-period" type="month"></div>
+                <div class="field"><label for="fee-amount">Monto</label><input id="fee-amount" type="number" min="0.01" step="0.01" required></div>
+                <div class="field"><label for="fee-currency">Moneda</label><select id="fee-currency"><option>VES</option><option>USD</option><option>EUR</option></select></div>
+                <div class="field"><label for="fee-issued">Fecha de emisión</label><input id="fee-issued" type="date" required></div>
+                <div class="field"><label for="fee-due">Vencimiento</label><input id="fee-due" type="date" required></div>
+                <div class="field"><label for="fee-notes">Notas</label><input id="fee-notes"></div>
+                <button class="btn btn-primary" type="submit">Registrar honorario</button>
+              </form>
+            </div>
+          </div>
+          <div class="panel"><div class="panel-head"><div><h2>Clientes de mi cartera</h2></div></div><div id="accountant-clients-table" class="table-wrap"></div></div>
+          <div class="panel"><div class="panel-head"><div><h2>Honorarios y cobros</h2></div></div><div id="accountant-fees-table" class="table-wrap"></div></div>`;
+        const today = new Date().toISOString().slice(0, 10);
+        $("#fee-issued").value = today;
+        $("#fee-due").value = today;
+        const loadData = async () => {
+          const [clients, fees] = await Promise.all([api("/professional/clients"), api("/professional/fees")]);
+          $("#fee-client").innerHTML = `<option value="">Seleccionar cliente</option>${clients.map(client => `<option value="${esc(client.id)}">${esc(client.name)} · ${esc(client.rif)}</option>`).join("")}`;
+          $("#accountant-clients-table").innerHTML = clients.length
+            ? `<table><thead><tr><th>Cliente</th><th>RIF</th><th>Correo</th><th>Teléfono</th><th></th></tr></thead><tbody>${clients.map(client => `<tr><td>${esc(client.name)}</td><td>${esc(client.rif)}</td><td>${esc(client.email || "—")}</td><td>${esc(client.phone || "—")}</td><td><button class="btn btn-danger portfolio-client-archive" data-id="${esc(client.id)}">Archivar</button></td></tr>`).join("")}</tbody></table>`
+            : '<div class="empty">Agrega el primer cliente a tu cartera.</div>';
+          $("#accountant-fees-table").innerHTML = fees.length
+            ? `<table><thead><tr><th>Referencia</th><th>Cliente</th><th>Servicio</th><th>Emitido</th><th>Vence</th><th>Monto</th><th>Estado</th><th>Acciones</th></tr></thead><tbody>${fees.map(fee => {
+              const client = clients.find(item => item.id === fee.client_id);
+              return `<tr><td>${esc(fee.reference)}</td><td>${esc(client?.name || "Cliente archivado")}</td><td>${esc(fee.service_description)}</td><td>${esc(fee.issued_at)}</td><td>${esc(fee.due_date)}</td><td>${esc(fee.currency)} ${money(fee.amount)}</td><td>${esc(fee.status)}</td><td><button class="btn btn-secondary fee-invoice-preview" data-id="${esc(fee.id)}">Cuenta de cobro</button> ${fee.status === "open" ? `<button class="btn btn-secondary fee-reminder" data-id="${esc(fee.id)}">Recordatorio</button><button class="btn btn-primary fee-mark-paid" data-id="${esc(fee.id)}">Registrar pago</button>` : ""}</td></tr>`;
+            }).join("")}</tbody></table>`
+            : '<div class="empty">Aún no hay honorarios registrados.</div>';
+          section.querySelectorAll(".portfolio-client-archive").forEach(button => button.addEventListener("click", async () => {
+            if (!confirm("¿Archivar este cliente? Sus honorarios históricos se conservarán.")) return;
+            try { await api(`/professional/clients/${button.dataset.id}`, { method: "DELETE" }); await loadData(); }
+            catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".fee-invoice-preview").forEach(button => button.addEventListener("click", async () => {
+            try {
+              const response = await fetch(`/professional/fees/${button.dataset.id}/invoice.html`, { headers: { Authorization: `Bearer ${state.token}` } });
+              if (!response.ok) throw new Error("No se pudo cargar la cuenta de cobro.");
+              const link = document.createElement("a");
+              link.href = URL.createObjectURL(await response.blob());
+              link.target = "_blank"; link.rel = "noopener"; link.click();
+              URL.revokeObjectURL(link.href);
+            } catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".fee-reminder").forEach(button => button.addEventListener("click", async () => {
+            try { await post(`/professional/fees/${button.dataset.id}/send-reminder`, {}); showMessage("Recordatorio enviado.", "success"); }
+            catch (error) { showMessage(error.message); }
+          }));
+          section.querySelectorAll(".fee-mark-paid").forEach(button => button.addEventListener("click", async () => {
+            const paymentReference = prompt("Referencia del pago (opcional):");
+            if (paymentReference === null) return;
+            try {
+              await post(`/professional/fees/${button.dataset.id}/mark-paid`, { paid_at: new Date().toISOString().slice(0, 10), payment_reference: paymentReference });
+              showMessage("Cobro registrado.", "success"); await loadData();
+            } catch (error) { showMessage(error.message); }
+          }));
+        };
+        $("#accountant-client-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            await post("/professional/clients", {
+              rif: $("#portfolio-rif").value.trim(), name: $("#portfolio-name").value.trim(),
+              email: $("#portfolio-email").value.trim() || null, phone: $("#portfolio-phone").value.trim(),
+              address: $("#portfolio-address").value.trim(), notes: $("#portfolio-notes").value.trim()
+            });
+            event.currentTarget.reset(); showMessage("Cliente agregado.", "success"); await loadData();
+          } catch (error) { showMessage(error.message); }
+        });
+        $("#accountant-fee-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            await post("/professional/fees", {
+              client_id: $("#fee-client").value, reference: $("#fee-reference").value.trim(),
+              service_description: $("#fee-service").value.trim(), service_period: $("#fee-period").value || "",
+              amount: $("#fee-amount").value, currency: $("#fee-currency").value,
+              issued_at: $("#fee-issued").value, due_date: $("#fee-due").value, notes: $("#fee-notes").value.trim()
+            });
+            event.currentTarget.reset(); $("#fee-issued").value = today; $("#fee-due").value = today;
+            showMessage("Honorario registrado.", "success"); await loadData();
+          } catch (error) { showMessage(error.message); }
+        });
+        loadData().catch(error => showMessage(error.message));
+      }
+
+      async function renderReports() {
+        if (!state.companyId) {
+          $("#view-reports").innerHTML = '<div class="panel"><div class="empty">Registra o selecciona primero una empresa.</div></div>';
+          return;
+        }
+        $("#view-reports").innerHTML = `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Balance de comprobación</h2><p class="subtle">Saldos de las cuentas con asientos contabilizados.</p></div></div>
+            <div class="toolbar">
+              <div class="field small"><label for="report-start">Desde</label><input id="report-start" type="date"></div>
+              <div class="field small"><label for="report-end">Hasta</label><input id="report-end" type="date"></div>
+              <button id="load-trial" class="btn btn-secondary">Consultar balance</button>
+            </div>
+            <div id="trial-result" class="table-wrap"><div class="empty">Selecciona un rango o consulta todos los períodos.</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Mayor por cuenta</h2><p class="subtle">Movimientos contabilizados y saldo progresivo.</p></div></div>
+            <form id="ledger-form" class="toolbar">
+              <div class="field"><label for="ledger-account">Cuenta contable</label><select id="ledger-account" required><option value="">Selecciona una cuenta</option>${state.accounts.map(account => `<option value="${esc(account.id)}">${esc(account.code)} · ${esc(account.name)}</option>`).join("")}</select></div>
+              <button class="btn btn-secondary" type="submit">Consultar mayor</button>
+            </form>
+            <div id="ledger-result" class="table-wrap"><div class="empty">Selecciona una cuenta para consultar sus movimientos.</div></div>
+          </div>`;
+        $("#view-reports").insertAdjacentHTML("beforeend", `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Estados financieros internos</h2><p class="subtle">Balance general y estado de resultados según cuentas contabilizadas. Requieren revisión profesional.</p></div></div>
+            <div id="financial-result" class="table-wrap"><div class="empty">Pulsa consultar para ver los estados financieros.</div></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Resumen fiscal de control</h2><p class="subtle">Totales internos por período; no constituye declaración ni archivo oficial del SENIAT.</p></div></div>
+            <form id="tax-summary-form" class="toolbar">
+              <div class="field small"><label for="tax-summary-period">Período AAAAMM</label><input id="tax-summary-period" value="${monthNow()}" pattern="[0-9]{6}" maxlength="6" required></div>
+              <button class="btn btn-secondary" type="submit">Consultar resumen</button>
+            </form>
+            <div id="tax-summary-result"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Hoja de trabajo fiscal mensual</h2><p class="subtle">Consolida los importes registrados y permite una segunda revisión. No genera una declaración oficial ni la transmite al SENIAT.</p></div></div>
+            <form id="tax-workpaper-form" class="toolbar">
+              <div class="field small"><label for="workpaper-period">Período AAAAMM</label><input id="workpaper-period" value="${monthNow()}" pattern="[0-9]{6}" maxlength="6" required></div>
+              <button class="btn btn-primary" type="submit">Preparar hoja de control</button>
+            </form>
+            <div id="tax-workpapers" class="table-wrap"></div>
+          </div>`);
+        $("#load-trial").addEventListener("click", async () => {
+          const result = $("#trial-result"); result.innerHTML = '<div class="empty">Consultando…</div>';
+          try {
+            const params = new URLSearchParams();
+            if ($("#report-start").value) params.set("start_date", $("#report-start").value);
+            if ($("#report-end").value) params.set("end_date", $("#report-end").value);
+            const rows = await api(`/companies/${state.companyId}/reports/trial-balance?${params}`);
+            const table = document.createElement("table");
+            table.innerHTML = "<thead><tr><th>Código</th><th>Cuenta</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr></thead>";
+            const tbody = document.createElement("tbody");
+            rows.forEach(item => {
+              const row = document.createElement("tr");
+              [item.code, item.name, money(item.debit), money(item.credit), money(item.balance)].forEach((value, index) => {
+                const cell = document.createElement("td"); cell.textContent = value; if (index > 1) cell.className = "number"; row.append(cell);
+              });
+              tbody.append(row);
+            });
+            if (!rows.length) { result.innerHTML = '<div class="empty">No hay asientos contabilizados en este período.</div>'; return; }
+            table.append(tbody); result.replaceChildren(table);
+          } catch (error) { result.textContent = error.message; }
+        });
+        $("#ledger-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          const accountId = $("#ledger-account").value;
+          const result = $("#ledger-result"); result.innerHTML = '<div class="empty">Consultando…</div>';
+          try {
+            const rows = await api(`/companies/${state.companyId}/accounts/${accountId}/ledger`);
+            if (!rows.length) { result.innerHTML = '<div class="empty">Esta cuenta no tiene movimientos contabilizados.</div>'; return; }
+            const table = document.createElement("table");
+            table.innerHTML = "<thead><tr><th>Fecha</th><th>Referencia</th><th>Descripción</th><th>Debe</th><th>Haber</th><th>Saldo</th></tr></thead>";
+            const tbody = document.createElement("tbody");
+            rows.forEach(item => {
+              const row = document.createElement("tr");
+              [item.date, item.reference, item.description, money(item.debit), money(item.credit), money(item.balance)].forEach((value, index) => {
+                const cell = document.createElement("td"); cell.textContent = value; if (index > 2) cell.className = "number"; row.append(cell);
+              });
+              tbody.append(row);
+            });
+            table.append(tbody); result.replaceChildren(table);
+          } catch (error) { result.textContent = error.message; }
+        });
+        $("#report-start").insertAdjacentHTML("afterend", '<button id="load-financial" class="btn btn-secondary">Consultar estados</button>');
+        $("#load-financial").addEventListener("click", async () => {
+          const result = $("#financial-result"); result.innerHTML = '<div class="empty">Consultando…</div>';
+          try {
+            const params = new URLSearchParams();
+            if ($("#report-start").value) params.set("start_date", $("#report-start").value);
+            if ($("#report-end").value) params.set("end_date", $("#report-end").value);
+            const data = await api(`/companies/${state.companyId}/reports/financial-statements?${params}`);
+            const groups = [
+              ["Balance general · Activos", data.balance_sheet.assets],
+              ["Balance general · Pasivos", data.balance_sheet.liabilities],
+              ["Balance general · Patrimonio", data.balance_sheet.equity],
+              ["Estado de resultados · Ingresos", data.income_statement.revenues],
+              ["Estado de resultados · Gastos", data.income_statement.expenses]
+            ];
+            const parts = groups.map(([heading, rows]) => `<h3>${esc(heading)}</h3>${rows.length ? `<table><thead><tr><th>Código</th><th>Cuenta</th><th>Saldo normal</th></tr></thead><tbody>${rows.map(row => `<tr><td>${esc(row.code)}</td><td>${esc(row.name)}</td><td class="number">${esc(money(row.balance))}</td></tr>`).join("")}</tbody></table>` : '<div class="empty">Sin movimientos.</div>'}`).join("");
+            result.innerHTML = `${parts}<p class="subtle">Activos: Bs. ${money(data.balance_sheet.total_assets)} · Pasivos: Bs. ${money(data.balance_sheet.total_liabilities)} · Patrimonio: Bs. ${money(data.balance_sheet.total_equity)} · Resultado: Bs. ${money(data.balance_sheet.period_result)} · Diferencia: Bs. ${money(data.balance_sheet.check_difference)}</p>`;
+          } catch (error) { result.textContent = error.message; }
+        });
+        $("#tax-summary-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            const data = await api(`/companies/${state.companyId}/reports/tax-summary?period=${encodeURIComponent($("#tax-summary-period").value)}`);
+            $("#tax-summary-result").innerHTML = `<div class="metric-row"><div class="metric"><strong>${money(data.purchase_vat)}</strong><span>IVA crédito compras (VES)</span></div><div class="metric"><strong>${money(data.sale_vat)}</strong><span>IVA débito ventas (VES)</span></div><div class="metric"><strong>${money(data.purchase_vat_withheld)}</strong><span>IVA retenido en compras (VES)</span></div></div>`;
+          } catch (error) { showMessage(error.message); }
+        });
+        const loadWorkpapers = async () => {
+          const workpapers = await api(`/companies/${state.companyId}/tax-workpapers`);
+          $("#tax-workpapers").innerHTML = workpapers.length
+            ? `<table><thead><tr><th>Período</th><th>Estado</th><th>Preparada</th><th>Importes de control</th><th>Acciones</th></tr></thead><tbody>${workpapers.map(item => {
+              const snapshot = JSON.parse(item.snapshot_json);
+              return `<tr><td>${esc(item.period)}</td><td>${esc(item.status)}</td><td>${esc(new Date(item.prepared_at).toLocaleString("es-VE"))}</td><td><code>${esc(JSON.stringify(snapshot))}</code></td><td>${item.status === "draft" && item.prepared_by !== state.user?.id && ["admin", "accountant"].includes(currentRole()) ? `<button class="btn btn-primary workpaper-review" data-id="${esc(item.id)}">Revisar</button>` : ""}</td></tr>`;
+            }).join("")}</tbody></table>`
+            : '<div class="empty">Aún no hay hojas de trabajo preparadas.</div>';
+          document.querySelectorAll(".workpaper-review").forEach(button => button.addEventListener("click", async () => {
+            if (!confirm("¿Revisaste los libros y comprobantes de este período? Esta acción deja constancia de revisión, no presenta la declaración.")) return;
+            try {
+              await post(`/companies/${state.companyId}/tax-workpapers/${button.dataset.id}/review`, {});
+              showMessage("Hoja de trabajo marcada como revisada.", "success"); await loadWorkpapers();
+            } catch (error) { showMessage(error.message); }
+          }));
+        };
+        $("#tax-workpaper-form").addEventListener("submit", async event => {
+          event.preventDefault();
+          try {
+            await post(`/companies/${state.companyId}/tax-workpapers?period=${encodeURIComponent($("#workpaper-period").value)}`, {});
+            showMessage("Hoja de trabajo fiscal preparada.", "success"); await loadWorkpapers();
+          } catch (error) { showMessage(error.message); }
+        });
+        loadWorkpapers().catch(error => { $("#tax-workpapers").textContent = error.message; });
+      }
+
+      async function renderAdmin() {
+        const canEdit = ["admin", "accountant"].includes(currentRole());
+        $("#view-admin").innerHTML = `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Cambiar mi contraseña</h2><p class="subtle">Usa una contraseña única de al menos 12 caracteres.</p></div></div>
+            <form id="password-form" class="grid">
+              <div class="field"><label for="password-current">Contraseña actual</label><input id="password-current" type="password" required></div>
+              <div class="field"><label for="password-new">Nueva contraseña</label><input id="password-new" type="password" minlength="12" required></div>
+              <div class="form-actions span-2"><button class="btn btn-primary" type="submit">Cambiar contraseña</button></div>
+            </form>
+          </div>
+          ${state.user?.is_superuser ? `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Límite de empresas del sistema</h2><p class="subtle">El máximo inicial es 10. Solo el administrador del sistema (superusuario) puede modificarlo.</p></div></div>
+            <form id="company-limit-form" class="toolbar"><div class="field small"><label for="company-limit">Máximo de empresas</label><input id="company-limit" type="number" min="1" max="1000" value="${state.companyLimit}" required></div><button class="btn btn-secondary" type="submit">Guardar límite</button></form>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Accesos de clientes</h2><p class="subtle">Crea y administra suscripciones, pagos y límites desde el módulo Licencias y pagos.</p></div><button id="open-licensing" class="btn btn-primary" type="button">Abrir licencias</button></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Solicitudes de acceso demo</h2><p class="subtle">Revise la identidad y profesión con el procedimiento interno antes de aprobar. La demo inicia por 5 días al momento de aprobación.</p></div></div>
+            <div id="demo-requests-table" class="table-wrap"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Integraciones y servicios externos</h2><p class="subtle">Estado sin mostrar claves. El OCR transmite los archivos elegidos al proveedor; la sincronización directa bancaria y la presentación oficial al SENIAT aún no están conectadas.</p></div><button id="refresh-integrations" class="btn btn-secondary" type="button">Actualizar estado</button></div>
+            <div id="integration-status" class="table-wrap"></div>
+            <button id="send-email-test" class="btn btn-primary" type="button" disabled>Enviar correo de prueba a mi cuenta</button>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><h2>Respaldos y recuperación</h2><p class="subtle">Crea y descarga respaldos PostgreSQL. La restauración requiere detener el servidor y confirmar en PowerShell.</p></div></div>
+            <div class="toolbar"><button id="create-backup" class="btn btn-primary">Crear respaldo ahora</button><button id="refresh-backups" class="btn btn-secondary">Actualizar lista</button><span>Respaldo diario programado a las 2:00 a. m.</span></div>
+            <div id="backups-table" class="table-wrap"></div>
+          </div>` : ""}
+          ${state.companyId && currentRole() === "admin" ? `
+          <div class="panel">
+            <div class="panel-head"><div><h2>Equipo contable de esta empresa</h2><p class="subtle">Invita a una persona con licencia vigente. El administrador del sistema ya asignó su cargo y permisos; aquí no se modifica su rol.</p></div></div>
+            <form id="company-member-form" class="toolbar"><div class="field"><label for="member-email">Correo del contador o administrador de empresa</label><input id="member-email" type="email" required></div><button class="btn btn-secondary" type="submit">Asignar acceso</button></form>
+            <div id="company-members" class="table-wrap"></div>
+          </div>` : ""}
+          <div class="panel">
+            <div class="panel-head"><div><h2>Auditoría de la empresa activa</h2><p class="subtle">Registro de operaciones y cambios relevantes; solo administradores pueden consultarlo.</p></div></div>
+            <div id="audit-table" class="table-wrap"></div>
+          </div>`;
+        $("#password-form").addEventListener("submit", async event => {
+          event.preventDefault(); const button = event.submitter; button.disabled = true;
+          try {
+            await post("/auth/change-password", {
+              current_password: $("#password-current").value,
+              new_password: $("#password-new").value
+            });
+            $("#password-form").reset();
+            showMessage("Contraseña actualizada.", "success");
+          } catch (error) { showMessage(error.message); }
+          finally { button.disabled = false; }
+        });
+        if (state.companyId && currentRole() === "admin") {
+          try {
+            const members = await api(`/companies/${state.companyId}/members`);
+            $("#company-members").innerHTML = `<table><thead><tr><th>Correo</th><th>Rol</th></tr></thead><tbody>${members.map(member => `<tr><td>${esc(member.email)}</td><td>${member.role === "admin" ? "Administrador" : member.role === "accountant" ? "Contador" : "Auditor"}</td></tr>`).join("")}</tbody></table>`;
+            $("#company-member-form").addEventListener("submit", async event => {
+              event.preventDefault();
+              try {
+                await post(`/companies/${state.companyId}/members`, {
+                  email: $("#member-email").value.trim()
+                });
+                showMessage("Acceso asignado con el rol definido por el administrador del sistema.", "success");
+                await renderAdmin();
+              } catch (error) { showMessage(error.message); }
+            });
+          } catch (error) {
+            $("#company-members").textContent = error.message;
+          }
+        }
+        if (state.user?.is_superuser) {
+          $("#open-licensing").addEventListener("click", () => switchView("licensing"));
+          const loadIntegrationStatus = async () => {
+            const integrations = await api("/admin/integrations/status");
+            $("#integration-status").innerHTML = `<table><thead><tr><th>Servicio</th><th>Estado</th><th>Detalle</th></tr></thead><tbody>
+              <tr><td>Correo SMTP</td><td>${integrations.email.configured ? "Configurado" : "Pendiente"}</td><td>Servidor ${integrations.email.host_configured ? "indicado" : "sin configurar"} · remitente ${integrations.email.sender_configured ? "indicado" : "sin configurar"} · TLS ${integrations.email.starttls_enabled ? "activo" : "inactivo"} · autenticación ${integrations.email.credentials_configured ? "configurada" : "no configurada"}</td></tr>
+              <tr><td>OCR Azure</td><td>${integrations.azure_ocr.configured ? "Configurado" : "Pendiente"}</td><td>Endpoint ${integrations.azure_ocr.endpoint_configured ? "indicado" : "sin configurar"} · clave ${integrations.azure_ocr.key_configured ? "configurada" : "sin configurar"}</td></tr>
+              <tr><td>Bancos</td><td>${integrations.banking.csv_import_available ? "CSV disponible" : "No disponible"}</td><td>Sin sincronización directa${integrations.banking.direct_bank_sync_configured ? " (configurada)" : ""}</td></tr>
+              <tr><td>SENIAT</td><td>${integrations.seniat.internal_workpapers_available ? "Hoja interna disponible" : "No disponible"}</td><td>Sin presentación oficial${integrations.seniat.official_submission_configured ? " (configurada)" : ""}</td></tr>
+            </tbody></table>`;
+            $("#send-email-test").disabled = !integrations.email.configured;
+          };
+          $("#refresh-integrations").addEventListener("click", () => {
+            loadIntegrationStatus().catch(error => { $("#integration-status").textContent = error.message; });
+          });
+          $("#send-email-test").addEventListener("click", async () => {
+            const button = $("#send-email-test");
+            button.disabled = true;
+            try {
+              const result = await post("/admin/integrations/email-test", {});
+              showMessage(`Correo de prueba enviado a ${result.recipient}.`, "success");
+            } catch (error) { showMessage(error.message); }
+            finally { button.disabled = false; }
+          });
+          loadIntegrationStatus().catch(error => { $("#integration-status").textContent = error.message; });
+          try {
+            const requests = await api("/admin/demo-requests?status_filter=pending_review");
+            $("#demo-requests-table").innerHTML = requests.length
+              ? `<table><thead><tr><th>Solicitante</th><th>Correo verificado</th><th>Cédula</th><th>RIF</th><th>Dirección</th><th>Profesión</th><th>Acciones</th></tr></thead><tbody>${requests.map(item => `<tr><td>${esc(item.full_name)}</td><td>${esc(item.email)}</td><td>${esc(item.identity_number)}</td><td>${esc(item.rif)}</td><td>${esc(item.address)}</td><td>${esc(item.profession)}</td><td><button class="btn btn-primary demo-approve" data-id="${esc(item.id)}">Aprobar · 5 días</button> <button class="btn btn-danger demo-reject" data-id="${esc(item.id)}">Rechazar</button></td></tr>`).join("")}</tbody></table>`
+              : '<div class="empty">No hay solicitudes con correo verificado pendientes de revisión.</div>';
+            document.querySelectorAll(".demo-approve").forEach(button => button.addEventListener("click", async () => {
+              const notes = prompt("Confirme que verificó correo, cédula, RIF, dirección y profesión. Nota opcional:");
+              if (notes === null) return;
+              try {
+                await post(`/admin/demo-requests/${button.dataset.id}/decision`, { decision: "approve", role: "accountant", notes });
+                showMessage("Acceso demo activado durante cinco días.", "success");
+                await renderAdmin();
+              } catch (error) { showMessage(error.message); }
+            }));
+            document.querySelectorAll(".demo-reject").forEach(button => button.addEventListener("click", async () => {
+              const notes = prompt("Motivo del rechazo:");
+              if (notes === null) return;
+              try {
+                await post(`/admin/demo-requests/${button.dataset.id}/decision`, { decision: "reject", notes });
+                showMessage("Solicitud rechazada.", "success");
+                await renderAdmin();
+              } catch (error) { showMessage(error.message); }
+            }));
+          } catch (error) { $("#demo-requests-table").textContent = error.message; }
+          $("#company-limit-form").addEventListener("submit", async event => {
+            event.preventDefault();
+            try {
+              const updated = await api("/admin/settings", { method: "PUT", body: JSON.stringify({ company_limit: Number($("#company-limit").value) }) });
+              state.companyLimit = updated.company_limit;
+              showMessage(`Límite del grupo actualizado a ${updated.company_limit} empresas.`, "success");
+              renderCompanies();
+            } catch (error) { showMessage(error.message); }
+          });
+          const loadBackups = async () => {
+            const backups = await api("/admin/backups");
+            $("#backups-table").innerHTML = backups.length
+              ? `<table><thead><tr><th>Archivo</th><th>Fecha (UTC)</th><th>Tamaño</th><th></th></tr></thead><tbody>${backups.map(backup => `<tr><td>${esc(backup.name)}</td><td>${esc(backup.created_at)}</td><td>${(backup.size_bytes / 1048576).toFixed(2)} MB</td><td><button class="btn btn-secondary download-backup" data-name="${esc(backup.name)}">Descargar</button></td></tr>`).join("")}</tbody></table>`
+              : '<div class="empty">Aún no hay respaldos. Pulsa “Crear respaldo ahora”.</div>';
+            document.querySelectorAll(".download-backup").forEach(button => button.addEventListener("click", async () => {
+              try {
+                const response = await fetch(`/admin/backups/${encodeURIComponent(button.dataset.name)}`, { headers: { Authorization: `Bearer ${state.token}` } });
+                if (!response.ok) throw new Error("No se pudo descargar el respaldo.");
+                const blob = await response.blob();
+                const link = document.createElement("a"); link.href = URL.createObjectURL(blob); link.download = button.dataset.name; link.click(); URL.revokeObjectURL(link.href);
+              } catch (error) { showMessage(error.message); }
+            }));
+          };
+          $("#refresh-backups").addEventListener("click", () => loadBackups().catch(error => showMessage(error.message)));
+          $("#create-backup").addEventListener("click", async event => {
+            event.submitter?.setAttribute("disabled", "");
+            try { await post("/admin/backups", {}); await loadBackups(); showMessage("Respaldo PostgreSQL creado.", "success"); }
+            catch (error) { showMessage(error.message); }
+            finally { $("#create-backup").disabled = false; }
+          });
+          await loadBackups();
+        }
+        const role = currentRole();
+        if (state.companyId && role === "admin") {
+          try {
+            const events = await api(`/companies/${state.companyId}/audit-events?limit=100`);
+            $("#audit-table").innerHTML = events.length
+              ? `<table><thead><tr><th>Fecha</th><th>Acción</th><th>Entidad</th><th>ID</th><th>Usuario</th></tr></thead><tbody>${events.map(item => `<tr><td>${esc(item.timestamp)}</td><td>${esc(item.action)}</td><td>${esc(item.entity_type)}</td><td>${esc(item.entity_id)}</td><td>${esc(item.user_id)}</td></tr>`).join("")}</tbody></table>`
+              : '<div class="empty">Todavía no hay eventos de auditoría.</div>';
+          } catch (error) { $("#audit-table").textContent = error.message; }
+        } else {
+          $("#audit-table").innerHTML = '<div class="empty">El rol de administrador de empresa permite consultar la auditoría.</div>';
+        }
+      }
+
+      async function renderLicensing() {
+        if (!state.user?.is_superuser) {
+          showMessage("Solo el usuario maestro puede administrar licencias.");
+          switchView("companies");
+          return;
+        }
+        const section = $("#view-licensing");
+        section.innerHTML = '<div class="panel"><p class="subtle">Cargando licencias, pagos y consumo...</p></div>';
+        try {
+          const stats = await api("/admin/license-stats");
+          const formatBytes = value => {
+            const bytes = Number(value || 0);
+            if (bytes < 1024) return `${bytes} B`;
+            const units = ["KB", "MB", "GB", "TB"];
+            let size = bytes / 1024, unit = 0;
+            while (size >= 1024 && unit < units.length - 1) { size /= 1024; unit++; }
+            return `${size.toFixed(2)} ${units[unit]}`;
+          };
+          const paymentsByLicense = await Promise.all(stats.licenses.map(async license => [
+            license.id, await api(`/admin/licenses/${license.id}/payments`)
+          ]));
+          const payments = new Map(paymentsByLicense);
+          section.innerHTML = `
+            <div class="panel">
+              <div class="panel-head"><div><h2>Panel de licencias</h2><p class="subtle">El usuario maestro crea, activa, suspende y revoca accesos. Cada licencia puede administrar hasta 10 empresas.</p></div></div>
+              <div class="metric-row">
+                <div class="metric"><strong>${stats.license_count}</strong><span>Accesos registrados</span></div>
+                <div class="metric"><strong>${stats.active_licenses}</strong><span>Licencias activas</span></div>
+                <div class="metric"><strong>${stats.suspended_licenses}</strong><span>Accesos suspendidos</span></div>
+                <div class="metric"><strong>${stats.expired_licenses}</strong><span>Licencias vencidas</span></div>
+                <div class="metric"><strong>${stats.company_count}</strong><span>Empresas de clientes</span></div>
+                <div class="metric"><strong>${formatBytes(stats.database_size_bytes)}</strong><span>Base PostgreSQL completa</span></div>
+              </div>
+              <p class="subtle">${esc(stats.storage_note)}</p>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><h2>Crear acceso</h2><p class="subtle">Cada acceso tiene un usuario propio, vigencia de suscripción y límite de empresas.</p></div></div>
+              <form id="license-create-form" class="grid">
+                <div class="field"><label for="license-email">Correo de acceso</label><input id="license-email" type="email" required></div>
+                <div class="field"><label for="license-password">Contraseña inicial</label><input id="license-password" type="password" minlength="12" required></div>
+                <div class="field"><label for="license-role">Cargo y funciones asignados por el administrador del sistema</label><select id="license-role"><option value="accountant">Contador</option><option value="admin">Administrador de empresa (licenciado en administración)</option></select></div>
+                <div class="field"><label for="license-start">Fecha de suscripción</label><input id="license-start" type="date" required></div>
+                <div class="field"><label for="license-expiry">Fecha de vencimiento</label><input id="license-expiry" type="date" required></div>
+                <div class="field"><label for="license-limit">Máximo de empresas (hasta 10)</label><input id="license-limit" type="number" min="1" max="10" value="10" required></div>
+                <div class="form-actions span-2"><button class="btn btn-primary" type="submit">Crear acceso licenciado</button></div>
+              </form>
+            </div>
+            <div class="panel">
+              <div class="panel-head"><div><h2>Suscripciones, pagos y consumo</h2><p class="subtle">El consumo por licencia es estimado; la base de datos física es compartida.</p></div></div>
+              <div id="license-table" class="table-wrap"></div>
+            </div>`;
+          $("#license-start").value = new Date().toISOString().slice(0, 10);
+          $("#license-create-form").addEventListener("submit", async event => {
+            event.preventDefault();
+            const button = event.submitter;
+            button.disabled = true;
+            try {
+              await post("/admin/licenses", {
+                email: $("#license-email").value.trim(),
+                password: $("#license-password").value,
+                role: $("#license-role").value,
+                subscribed_at: $("#license-start").value,
+                expires_at: $("#license-expiry").value,
+                max_companies: Number($("#license-limit").value)
+              });
+              showMessage("Acceso licenciado creado.", "success");
+              await renderLicensing();
+            } catch (error) { showMessage(error.message); }
+            finally { button.disabled = false; }
+          });
+          const methodLabels = { transfer: "Transferencia", cash: "Efectivo", card: "Tarjeta", mobile_payment: "Pago móvil", other: "Otro" };
+          $("#license-table").innerHTML = stats.licenses.length ? `<div class="license-list">
+            ${stats.licenses.map(license => `<article class="license-card" aria-labelledby="license-title-${esc(license.id)}">
+              <header class="license-card-head">
+                <div><h3 id="license-title-${esc(license.id)}">${esc(license.email)}</h3><p class="subtle">Acceso licenciado</p></div>
+                <span class="license-status ${esc(license.status)}">${esc(license.status)}</span>
+              </header>
+              <div class="license-fields">
+                <div class="license-field"><label for="license-email-${esc(license.id)}">Correo de acceso</label><input id="license-email-${esc(license.id)}" class="license-email" type="email" value="${esc(license.email)}"></div>
+                <div class="license-field"><label for="license-password-${esc(license.id)}">Restablecer contraseña <span class="subtle">(opcional)</span></label><input id="license-password-${esc(license.id)}" class="license-password" type="password" minlength="12" autocomplete="new-password" placeholder="Deja vacío para no cambiar"></div>
+                <div class="license-field"><label for="license-role-${esc(license.id)}">Cargo asignado por el administrador del sistema</label><select id="license-role-${esc(license.id)}" class="license-role"><option value="accountant" ${license.role === "accountant" ? "selected" : ""}>Contador</option><option value="admin" ${license.role === "admin" ? "selected" : ""}>Administrador de empresa (licenciado en administración)</option></select></div>
+                <div class="license-field"><label for="license-start-${esc(license.id)}">Inicio de suscripción</label><input id="license-start-${esc(license.id)}" class="license-start" type="date" value="${esc(license.subscribed_at)}"></div>
+                <div class="license-field"><label for="license-expiry-${esc(license.id)}">Vencimiento</label><input id="license-expiry-${esc(license.id)}" class="license-expiry" type="date" value="${esc(license.expires_at)}"></div>
+                <div class="license-field"><label for="license-limit-${esc(license.id)}">Máximo de empresas</label><input id="license-limit-${esc(license.id)}" class="license-limit" type="number" min="1" max="10" value="${license.max_companies}"></div>
+              </div>
+              <div class="license-card-actions">
+                <button class="btn btn-primary license-save" data-id="${esc(license.id)}">Guardar cambios</button>
+                <button class="btn btn-secondary license-toggle" data-id="${esc(license.id)}" data-status="${license.status === "active" ? "suspended" : "active"}">${license.status === "active" ? "Suspender acceso" : "Activar acceso"}</button>
+                <button class="btn btn-danger license-cancel" data-id="${esc(license.id)}">Revocar acceso</button>
+              </div>
+              <div class="license-usage" aria-label="Resumen de licencia">
+                <div class="license-usage-item"><span>Empresas activas / máximo</span><strong>${license.company_count} / ${license.max_companies}</strong></div>
+                <div class="license-usage-item"><span>Consumo de datos estimado</span><strong>${formatBytes(license.estimated_data_bytes)}</strong></div>
+                <div class="license-usage-item"><span>Pagos registrados</span><strong>${license.payments_count}</strong></div>
+                <div class="license-usage-item"><span>Último pago</span><strong>${license.last_payment_at ? esc(license.last_payment_at) : "Sin pagos"}</strong></div>
+                <div class="license-usage-item"><span>Total registrado por moneda</span><strong>${Object.entries(license.payment_totals).map(([currency, amount]) => `${esc(currency)} ${money(amount)}`).join(" · ") || "Sin pagos"}</strong></div>
+              </div>
+              <details class="license-payments"><summary>Ver historial y registrar pago</summary>
+                <div class="table-wrap">${(payments.get(license.id) || []).length ? `<table><thead><tr><th>Fecha</th><th>Monto</th><th>Método</th><th>Referencia</th><th>Nota</th></tr></thead><tbody>${payments.get(license.id).map(payment => `<tr><td>${esc(payment.paid_at)}</td><td>${esc(payment.currency)} ${money(payment.amount)}</td><td>${esc(methodLabels[payment.method] || payment.method)}</td><td>${esc(payment.reference)}</td><td>${esc(payment.notes)}</td></tr>`).join("")}</tbody></table>` : '<p class="subtle">No hay pagos registrados.</p>'}</div>
+                <form class="license-payment-form toolbar" data-id="${esc(license.id)}">
+                  <div class="field small"><label for="payment-date-${esc(license.id)}">Fecha de pago</label><input id="payment-date-${esc(license.id)}" name="paid_at" type="date" required></div>
+                  <div class="field small"><label for="payment-amount-${esc(license.id)}">Monto</label><input id="payment-amount-${esc(license.id)}" name="amount" type="number" min="0.01" step="0.01" required></div>
+                  <div class="field small"><label for="payment-currency-${esc(license.id)}">Moneda</label><select id="payment-currency-${esc(license.id)}" name="currency"><option>USD</option><option>VES</option></select></div>
+                  <div class="field small"><label for="payment-method-${esc(license.id)}">Método</label><select id="payment-method-${esc(license.id)}" name="method"><option value="transfer">Transferencia</option><option value="cash">Efectivo</option><option value="card">Tarjeta</option><option value="mobile_payment">Pago móvil</option><option value="other">Otro</option></select></div>
+                  <div class="field"><label for="payment-reference-${esc(license.id)}">Referencia</label><input id="payment-reference-${esc(license.id)}" name="reference" maxlength="100"></div>
+                  <div class="field"><label for="payment-notes-${esc(license.id)}">Observación</label><input id="payment-notes-${esc(license.id)}" name="notes" maxlength="2000"></div>
+                  <button class="btn btn-primary" type="submit">Registrar pago</button>
+                </form>
+              </details>
+            </article>`).join("")}
+          </div>` : '<div class="empty">Aún no hay accesos licenciados.</div>';
+          document.querySelectorAll(".license-payment-form").forEach(form => {
+            form.querySelector('[name="paid_at"]').value = new Date().toISOString().slice(0, 10);
+            form.addEventListener("submit", async event => {
+              event.preventDefault();
+              const data = new FormData(form);
+              try {
+                await post(`/admin/licenses/${form.dataset.id}/payments`, Object.fromEntries(data.entries()));
+                showMessage("Pago registrado en el historial.", "success");
+                await renderLicensing();
+              } catch (error) { showMessage(error.message); }
+            });
+          });
+          document.querySelectorAll(".license-save").forEach(button => button.addEventListener("click", async () => {
+            const row = button.closest(".license-card");
+            const licenseId = button.dataset.id;
+            try {
+              await api(`/admin/licenses/${licenseId}`, {
+                method: "PUT",
+                body: JSON.stringify({
+                  email: row.querySelector(".license-email").value.trim(),
+                  password: row.querySelector(".license-password").value || null,
+                  role: row.querySelector(".license-role").value,
+                  subscribed_at: row.querySelector(".license-start").value,
+                  expires_at: row.querySelector(".license-expiry").value,
+                  max_companies: Number(row.querySelector(".license-limit").value)
+                })
+              });
+              showMessage("Suscripción actualizada.", "success");
+              await renderLicensing();
+            } catch (error) { showMessage(error.message); }
+          }));
+          document.querySelectorAll(".license-toggle").forEach(button => button.addEventListener("click", async () => {
+            try {
+              await api(`/admin/licenses/${button.dataset.id}/status?status=${button.dataset.status}`, { method: "PUT" });
+              await renderLicensing();
+            } catch (error) { showMessage(error.message); }
+          }));
+          document.querySelectorAll(".license-cancel").forEach(button => button.addEventListener("click", async () => {
+            if (!confirm("Revocar este acceso? Se conservarán sus empresas, operaciones y pagos para auditoría.")) return;
+            try {
+              await api(`/admin/licenses/${button.dataset.id}`, { method: "DELETE" });
+              showMessage("Acceso revocado; los datos contables se conservaron.", "success");
+              await renderLicensing();
+            } catch (error) { showMessage(error.message); }
+          }));
+        } catch (error) {
+          section.innerHTML = `<div class="panel"><div class="alert alert-error">${esc(error.message)}</div></div>`;
+        }
+      }
+
+      function render() {
+        setCompanyPicker();
+        if (state.view === "companies") renderCompanies();
+        if (state.view === "accounts") renderAccounts();
+        if (state.view === "documents") renderDocuments();
+        if (state.view === "vault") renderVault();
+        if (state.view === "contacts") renderContacts();
+        if (state.view === "payments") renderPayments();
+        if (state.view === "review") renderReview();
+        if (state.view === "reports") renderReports();
+        if (state.view === "personal") renderPersonal();
+        if (state.view === "professional") renderProfessional();
+        if (state.view === "admin") renderAdmin();
+        if (state.view === "licensing") renderLicensing();
+      }
+
+      $("#login-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter; button.disabled = true;
+        $("#login-message").innerHTML = "";
+        const form = new URLSearchParams();
+        form.set("username", $("#login-email").value.trim());
+        form.set("password", $("#login-password").value);
+        try {
+          const response = await fetch("/auth/token", { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: form });
+          const result = await response.json();
+          if (!response.ok) throw new Error(result.detail || "No se pudo iniciar sesión.");
+          state.token = result.access_token;
+          state.email = $("#login-email").value.trim();
+          $("#user-name").textContent = "Sesión activa";
+          $("#user-email").textContent = state.email;
+          await loadCompanies();
+          $("#login-page").classList.add("hidden");
+          $("#app-shell").classList.remove("hidden");
+        } catch (error) { showMessage(error.message, "error", "#login-message"); }
+        finally { button.disabled = false; }
+      });
+
+      $("#demo-request-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        button.disabled = true;
+        try {
+          const result = await post("/demo/access", {
+            email: $("#demo-email").value.trim(),
+            password: $("#demo-password").value,
+            full_name: $("#demo-name").value.trim(),
+            identity_number: $("#demo-id").value.trim(),
+            rif: $("#demo-rif").value.trim(),
+            address: $("#demo-address").value.trim(),
+            profession: $("#demo-profession").value.trim()
+          });
+          state.demoRequestId = result.id;
+          $("#demo-verify-form").classList.remove("hidden");
+          showMessage("Solicitud enviada. Ingresa el código de verificación que recibiste.", "success", "#demo-message");
+        } catch (error) {
+          const match = error.message.match(/solicitud guardada como ([0-9a-f-]{36})/i);
+          if (match) {
+            state.demoRequestId = match[1];
+            $("#demo-verify-form").classList.remove("hidden");
+            $("#demo-resend-button").classList.remove("hidden");
+          }
+          showMessage(error.message, "error", "#demo-message");
+        } finally { button.disabled = false; }
+      });
+      $("#demo-verify-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        try {
+          await post(`/demo/access/${state.demoRequestId}/verify`, { code: $("#demo-code").value });
+          $("#demo-code").value = "";
+          showMessage("Correo verificado. El administrador revisará tus datos y decidirá sobre el acceso demo.", "success", "#demo-message");
+        } catch (error) { showMessage(error.message, "error", "#demo-message"); }
+      });
+      $("#demo-resend-button").addEventListener("click", async () => {
+        try {
+          await post(`/demo/access/${state.demoRequestId}/resend`, {});
+          showMessage("Se envió un nuevo código al correo.", "success", "#demo-message");
+        } catch (error) { showMessage(error.message, "error", "#demo-message"); }
+      });
+
+      document.querySelectorAll(".nav button").forEach(button => button.addEventListener("click", () => switchView(button.dataset.view)));
+      $("#company-picker").addEventListener("change", async event => {
+        state.companyId = event.target.value;
+        try { await loadAccounts(); render(); }
+        catch (error) { showMessage(error.message); }
+      });
+      $("#logout-button").addEventListener("click", () => {
+        state.token = ""; state.email = ""; state.companies = []; state.companyId = ""; state.accounts = [];
+        $("#login-password").value = "";
+        $("#app-shell").classList.add("hidden");
+        $("#login-page").classList.remove("hidden");
+      });
+    })();
+  </script>
+</body>
+</html>
