@@ -4,9 +4,13 @@ Aplicación en Python/FastAPI y PostgreSQL con una cuenta maestra para administr
 
 ## Inicio local con Docker
 
-1. Copia `.env.example` a `.env` y cambia `JWT_SECRET`, `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD`. Usa una contraseña de al menos 12 caracteres y conserva las credenciales de manera segura.
+1. Copia `.env.example` a `.env` y genera secretos únicos para `POSTGRES_PASSWORD` y `JWT_SECRET`. En PowerShell puedes generarlos con `py -c "import secrets; print(secrets.token_hex(32))"`. También cambia `BOOTSTRAP_ADMIN_EMAIL` y `BOOTSTRAP_ADMIN_PASSWORD`; usa una contraseña de al menos 12 caracteres y conserva las credenciales de manera segura.
 2. Desde esta carpeta ejecuta `docker compose up --build`.
-3. Abre `http://localhost:8000` para usar la interfaz gráfica. La documentación técnica de la API está disponible en `http://localhost:8000/docs`.
+3. Por defecto, la interfaz queda disponible solo en el equipo local: `http://localhost:8000`. PostgreSQL también queda ligado a `127.0.0.1`; ya no usa una contraseña predeterminada. No cambies `API_BIND_ADDRESS` a `0.0.0.0` para publicar el servidor.
+
+Para acceso remoto, coloca un proxy inverso con HTTPS válido delante de la API, limita el puerto del contenedor a localhost y permite desde Internet únicamente HTTPS (443) en el firewall. No publiques Uvicorn ni PostgreSQL directamente. Si el proxy corre en otra máquina, usa una red privada o túnel autenticado entre el proxy y este servidor en vez de exponer los puertos de aplicación. Nunca confíes en ocultar la URL o la documentación `/docs` como control de acceso: cada operación sensible debe seguir protegida por autenticación y permisos del servidor.
+
+`DATABASE_URL` también debe llevar la contraseña real de PostgreSQL cuando se ejecuta FastAPI directamente fuera de Compose. La aplicación ahora se detiene con un error claro si esa variable falta; no contiene una contraseña de base de datos predeterminada.
 
 La primera ejecución crea al **administrador del sistema** (superusuario) indicado por `BOOTSTRAP_ADMIN_*`. Este es el único rol que gestiona la plataforma, clientes, licencias y perfiles. Al crear o modificar una licencia, asigna el cargo y permisos del nuevo usuario según sus funciones: **contador** o **administrador de empresa** (profesional licenciado en administración). El administrador de empresa es un rol operativo de cliente y no tiene privilegios de superusuario. En la gestión de equipo de una empresa no se puede cambiar el rol: se respeta el que el administrador del sistema asignó a la cuenta invitada.
 
@@ -17,7 +21,7 @@ Set-Location contabilidad
 py -m venv .venv
 .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-$env:DATABASE_URL = "postgresql+psycopg://contabilidad:contabilidad@localhost:5433/contabilidad"
+$env:DATABASE_URL = "postgresql+psycopg://contabilidad:<POSTGRES_PASSWORD>@localhost:5433/contabilidad"
 $env:JWT_SECRET = "replace-with-a-random-secret-of-at-least-32-characters"
 $env:BOOTSTRAP_ADMIN_EMAIL = "admin@example.com"
 $env:BOOTSTRAP_ADMIN_PASSWORD = "replace-with-a-password-of-at-least-12-characters"
@@ -47,7 +51,7 @@ pytest
 - **Importación bancaria:** importa CSV de hasta 5 MB a una cuenta bancaria seleccionada, acepta coma, punto y coma, barra o tabulación, encabezados de fecha/referencia/monto (o débito/crédito), normaliza fechas/montos y reporta duplicados/filas inválidas. No accede a credenciales bancarias ni sincroniza directamente con bancos; la conciliación sigue siendo manual.
 - **OCR opcional de facturas:** si se configura `AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT` y `AZURE_DOCUMENT_INTELLIGENCE_KEY`, los PDFs e imágenes del archivo documental se envían al modelo `prebuilt-invoice`; los campos reconocidos requieren revisión de otra persona y nunca crean facturas ni asientos automáticamente. Sin proveedor configurado, la aplicación informa que OCR no está disponible.
 - **Preparación fiscal y SENIAT:** la hoja de trabajo mensual guarda un resumen inmutable de los libros contabilizados y permite revisión por segunda persona. No presenta ni transmite declaraciones, no se conecta con el SENIAT y no produce archivos oficiales. Un conector oficial requerirá credenciales/contrato vigentes y validación jurídica/técnica antes de habilitarse.
-- **Acceso demo:** el solicitante registra correo, contraseña y datos de identidad, RIF, dirección y profesión. Recibe código de verificación al correo; después de verificarlo, el superadministrador revisa los datos y aprueba/rechaza manualmente. La aprobación crea licencia de contador por cinco días exactos de calendario (acceso hasta el final del quinto día), con cupo de una empresa. Requiere SMTP configurado y verificar identidad/RIF mediante un proceso autorizado; la aplicación no valida esos datos con fuentes gubernamentales. Los datos identificatorios son información personal: define aviso de privacidad, acceso restringido y retención/borrado antes de abrir registros al público.
+- **Acceso demo:** el solicitante registra correo, contraseña y datos de identidad, RIF, dirección y profesión. Recibe código de verificación al correo; después de verificarlo, el superadministrador revisa los datos y aprueba/rechaza manualmente. La aprobación crea licencia de contador por cinco días exactos de calendario (acceso hasta el final del quinto día), con cupo de una empresa. Requiere SMTP configurado y verificar identidad/RIF mediante un proceso autorizado; la aplicación no valida esos datos con fuentes gubernamentales. La solicitud requiere aceptar el aviso de privacidad operativo; el plazo automático de 90 días aplica a solicitudes demo y no a cuentas aprobadas ni a documentos contables. Los registros anteriores a la migración de privacidad quedan identificados como sin constancia de aceptación.
 
 ### Configurar correo con Gmail o Google Workspace
 
@@ -86,6 +90,38 @@ Los respaldos se guardan en `%LOCALAPPDATA%\Sistema Contable Multiempresa\backup
 
 El script pide escribir `RESTAURAR CONTABILIDAD`; esta acción reemplaza datos. Guarda otra copia antes de restaurar.
 
+### Verificación de restauración, monitoreo y recuperación de acceso
+
+Antes de actualizar la base o depender de un respaldo, crea y valida una copia restaurándola en una base PostgreSQL temporal (no sobre la base activa):
+
+```powershell
+$backup = .\.venv\Scripts\python.exe .\scripts\backup_database.py
+if ($LASTEXITCODE -ne 0) { throw "Falló la creación del respaldo" }
+.\.venv\Scripts\python.exe .\scripts\verify_backup_restore.py $backup
+```
+
+La comprobación necesita `pg_dump`, `pg_restore` y un usuario PostgreSQL con permiso para crear/eliminar bases de datos. Informa la revisión de migración, tablas esenciales y cantidades restauradas; al finalizar elimina la base temporal. No ejecutes pruebas de restauración manuales sobre la base de producción.
+
+`GET /health` es una comprobación de proceso liviana. `GET /ready` prueba además la conexión a PostgreSQL y responde HTTP 503 si la aplicación no puede atender solicitudes. El `healthcheck` de Docker usa `/ready`; configura tu monitor externo para consultar ese endpoint por la red privada y alertar ante respuestas distintas de HTTP 200. Este indicador no reemplaza métricas, alertas, registros centralizados ni un plan de respuesta a incidentes.
+
+La pantalla de acceso permite solicitar un enlace/código de recuperación por correo. El código vence en 30 minutos, solo se usa una vez y la confirmación invalida los JWT emitidos antes del cambio. El endpoint devuelve la misma respuesta para correos registrados o no registrados y limita reenvíos al mismo correo a uno por minuto. El flujo no estará operativo hasta configurar SMTP con STARTTLS; la entrega real debe probarse con el proveedor elegido.
+
+### Retención operativa de solicitudes demo
+
+El script muestra un simulacro por defecto y borra únicamente solicitudes demo con más de 90 días y desafíos de recuperación con más de 7 días:
+
+```powershell
+.\.venv\Scripts\python.exe .\scripts\purge_expired_personal_data.py
+```
+
+Revisa las cantidades antes de instalar la tarea diaria, que se ejecutará como el usuario actual de Windows a las 3:00 a. m. y sí realizará eliminaciones:
+
+```powershell
+.\scripts\install_data_retention_task.ps1
+```
+
+La tarea no se instala automáticamente. El perfil de una cuenta aprobada, documentos contables y respaldos no se purgan con este proceso. Los respaldos conservan sus propias copias hasta vencer su retención configurada. El plazo de 90 días y el aviso mostrado son una configuración operativa provisional, no una determinación legal; antes de habilitar solicitudes públicas, completa la identidad y contacto del responsable y valida aviso, base jurídica, plazos y obligaciones de conservación con asesoría competente.
+
 ## Alcance normativo y producción
 
 Los importes contables de factura se capturan en VES; para pagos en otra moneda se registra el monto pagado en esa divisa y su tasa de cambio para estimar IGTF. La forma del RIF se valida localmente; no se consulta al SENIAT ni se valida el dígito verificador. Tasas, retenciones, excepciones y obligación de IGTF deben verificarse contra la normativa vigente y parametrizarse con un contador venezolano. La exportación CSV delimitada por `|` es un libro de control, **no se garantiza como archivo oficial de carga SENIAT**. No se presentan declaraciones ni se sincroniza con el SENIAT; tampoco se genera XML oficial de retenciones ni estados VEN-NIF reexpresados por inflación. Los documentos comerciales con logo son cuentas informativas, no facturas fiscales autorizadas. El archivo documental y los datos de identidad de la solicitud demo no son repositorios cifrados de extremo a extremo; configura HTTPS en producción, restringe accesos y define la base legal, retención y eliminación de datos personales.
@@ -94,4 +130,4 @@ El IGTF se estima a partir del importe y tasa ingresados al capturar un pago; la
 
 El flujo de preparador y revisor proporciona una separación de funciones operativa; no certifica por sí mismo cumplimiento de todas las leyes, estatutos o políticas internas venezolanas. Configura roles y controles con el contador responsable y asesores legales de cada empresa.
 
-**Antes de vender accesos en Internet**, configura un dominio y HTTPS, secretos de producción, política de privacidad y retención, recuperación de contraseñas, monitoreo, restauración de respaldos probada y un proceso de respuesta a incidentes. El registro de pagos actual no es una pasarela de cobro; integra y prueba un proveedor de pagos antes de anunciar cobros automatizados. Evalúa almacenamiento y backups separados por cliente si necesitas cuotas exactas o garantías de aislamiento fuertes. Las migraciones versionadas se aplican al iniciar la API; crea un respaldo antes de actualizaciones importantes.
+**Antes de vender accesos en Internet**, configura un dominio y HTTPS con proxy inverso, limita el firewall a los puertos necesarios, rota y resguarda secretos de producción y confirma que los puertos de PostgreSQL/Uvicorn no estén expuestos públicamente. El código incorpora readiness, recuperación de contraseña y retención operativa; todavía debes configurar y probar el correo real, conectar alertas externas, comprobar una restauración con permisos PostgreSQL adecuados, completar la política de privacidad con asesoría competente y definir un proceso de respuesta a incidentes. No instales la tarea automática de borrado. Como la API aplica las migraciones al iniciar, no reinicies la instancia de producción con esta versión hasta verificar que el respaldo se puede restaurar y revisar el cambio de esquema. El registro de pagos actual no es una pasarela de cobro; integra y prueba un proveedor de pagos antes de anunciar cobros automatizados. Evalúa almacenamiento y backups separados por cliente si necesitas cuotas exactas o garantías de aislamiento fuertes.

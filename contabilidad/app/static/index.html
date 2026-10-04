@@ -185,6 +185,22 @@
         <div class="field"><label for="login-password">Contraseña</label><input id="login-password" type="password" autocomplete="current-password" required></div>
         <button class="btn btn-primary btn-block" type="submit">Entrar al sistema</button>
       </form>
+      <details class="login-card" style="margin-top:16px">
+        <summary style="cursor:pointer;font-weight:700">¿Olvidaste tu contraseña?</summary>
+        <p class="subtle">Solicita un código por correo. Vence en 30 minutos, se usa una sola vez y al completar el cambio se cierran las sesiones anteriores.</p>
+        <form id="password-reset-request-form">
+          <div id="password-reset-request-message"></div>
+          <div class="field"><label for="password-reset-email">Correo de tu cuenta</label><input id="password-reset-email" type="email" autocomplete="email" required></div>
+          <button class="btn btn-secondary btn-block" type="submit">Enviar instrucciones</button>
+        </form>
+        <form id="password-reset-confirm-form" style="margin-top:16px">
+          <div id="password-reset-confirm-message"></div>
+          <div class="field"><label for="password-reset-confirm-email">Correo de tu cuenta</label><input id="password-reset-confirm-email" type="email" autocomplete="email" required></div>
+          <div class="field"><label for="password-reset-token">Código recibido por correo</label><input id="password-reset-token" autocomplete="one-time-code" minlength="32" maxlength="128" required></div>
+          <div class="field"><label for="password-reset-new">Nueva contraseña (mínimo 12 caracteres)</label><input id="password-reset-new" type="password" minlength="12" autocomplete="new-password" required></div>
+          <button class="btn btn-primary btn-block" type="submit">Cambiar contraseña</button>
+        </form>
+      </details>
       <details class="login-card" style="margin-top:32px">
         <summary style="cursor:pointer;font-weight:700">Solicitar acceso demo de 5 días</summary>
         <p class="subtle">El correo se verifica con un código. El administrador revisa manualmente cédula, RIF, dirección y profesión; los 5 días comienzan al aprobar la solicitud.</p>
@@ -197,6 +213,13 @@
           <div class="field"><label for="demo-rif">RIF personal</label><input id="demo-rif" placeholder="V-12345678-9" required></div>
           <div class="field"><label for="demo-address">Dirección</label><textarea id="demo-address" minlength="8" maxlength="2000" required></textarea></div>
           <div class="field"><label for="demo-profession">Profesión u oficio</label><input id="demo-profession" minlength="2" maxlength="120" required></div>
+          <details class="privacy-notice">
+            <summary style="cursor:pointer;font-weight:700">Aviso de privacidad de la solicitud demo</summary>
+            <p>El administrador del sistema tratará tu nombre, correo, contraseña cifrada, cédula, RIF, dirección y profesión para verificar el correo, revisar manualmente la solicitud y administrar el acceso demo. La contraseña se almacena como hash y el código de correo solo como resumen criptográfico.</p>
+            <p>El correo de verificación se entrega mediante el proveedor SMTP que configure el operador. Los archivos de facturas solo se envían a Azure si una persona autorizada solicita explícitamente el OCR. No se transmiten datos al SENIAT ni a bancos desde este formulario.</p>
+            <p>Las solicitudes de acceso y la información personal de revisión se conservarán por un máximo operativo de 90 días desde su creación y después se eliminarán mediante la tarea de retención configurada. Si se aprueba el acceso, los datos de perfil necesarios para la cuenta permanecen mientras exista la cuenta o una obligación legal de conservación. Este aviso es un borrador operativo: antes de ofrecer el formulario públicamente, el operador debe completar su identidad y contacto legal, confirmar la base jurídica y validar los plazos con asesoría competente.</p>
+          </details>
+          <div class="field"><label><input id="demo-privacy-accept" type="checkbox" required> He leído y acepto el aviso de privacidad versión 2026-10-04-v1 para enviar esta solicitud.</label></div>
           <button class="btn btn-primary btn-block" type="submit">Enviar solicitud y verificar correo</button>
         </form>
         <form id="demo-verify-form" class="hidden" style="margin-top:18px">
@@ -1962,6 +1985,37 @@
         finally { button.disabled = false; }
       });
 
+      $("#password-reset-request-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        button.disabled = true;
+        try {
+          const result = await post("/auth/password-reset/request", {
+            email: $("#password-reset-email").value.trim()
+          });
+          showMessage(result.message, "success", "#password-reset-request-message");
+        } catch (error) {
+          showMessage(error.message, "error", "#password-reset-request-message");
+        } finally { button.disabled = false; }
+      });
+      $("#password-reset-confirm-form").addEventListener("submit", async event => {
+        event.preventDefault();
+        const button = event.submitter;
+        button.disabled = true;
+        try {
+          const result = await post("/auth/password-reset/confirm", {
+            email: $("#password-reset-confirm-email").value.trim(),
+            token: $("#password-reset-token").value.trim(),
+            new_password: $("#password-reset-new").value
+          });
+          $("#password-reset-token").value = "";
+          $("#password-reset-new").value = "";
+          showMessage(`${result.message}`, "success", "#password-reset-confirm-message");
+        } catch (error) {
+          showMessage(error.message, "error", "#password-reset-confirm-message");
+        } finally { button.disabled = false; }
+      });
+
       $("#demo-request-form").addEventListener("submit", async event => {
         event.preventDefault();
         const button = event.submitter;
@@ -1974,7 +2028,8 @@
             identity_number: $("#demo-id").value.trim(),
             rif: $("#demo-rif").value.trim(),
             address: $("#demo-address").value.trim(),
-            profession: $("#demo-profession").value.trim()
+            profession: $("#demo-profession").value.trim(),
+            privacy_notice_accepted: $("#demo-privacy-accept").checked
           });
           state.demoRequestId = result.id;
           $("#demo-verify-form").classList.remove("hidden");

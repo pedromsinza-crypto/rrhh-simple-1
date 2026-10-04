@@ -29,9 +29,13 @@ def verify_password(password: str, hashed: str) -> bool:
     return password_hash.verify(password, hashed)
 
 
-def create_access_token(subject: str) -> str:
+def create_access_token(subject: str, auth_version: int = 0) -> str:
     expires = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_MINUTES)
-    return jwt.encode({"sub": subject, "exp": expires}, JWT_SECRET, algorithm=ALGORITHM)
+    return jwt.encode(
+        {"sub": subject, "ver": auth_version, "exp": expires},
+        JWT_SECRET,
+        algorithm=ALGORITHM,
+    )
 
 
 def current_user(
@@ -51,7 +55,11 @@ def current_user(
     except JWTError as exc:
         raise credentials_error from exc
     user = db.get(User, user_id)
-    if not user or not user.active:
+    if (
+        not user
+        or not user.active
+        or payload.get("ver", 0) != user.auth_version
+    ):
         raise credentials_error
     if not user.is_superuser:
         license_access = db.scalar(

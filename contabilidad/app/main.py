@@ -4,6 +4,7 @@ import hashlib
 import html
 import hmac
 import json
+import logging
 import os
 import re
 import secrets
@@ -27,7 +28,7 @@ from fastapi import Depends, FastAPI, File, Form, HTTPException, Request, Upload
 from fastapi.responses import FileResponse, Response, StreamingResponse
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy import func, select, text
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 from sqlalchemy.orm import Session, joinedload
 
 from dotenv import load_dotenv
@@ -54,6 +55,7 @@ from .models import (
     Membership,
     OpeningBalance,
     Payment,
+    PasswordResetChallenge,
     PersonalPlanItem,
     PersonalTransaction,
     ProfessionalFee,
@@ -94,6 +96,8 @@ from .schemas import (
     MembershipCreate,
     OpeningBalanceCreate,
     PasswordChange,
+    PasswordResetConfirm,
+    PasswordResetRequest,
     PaymentCreate,
     PaymentRead,
     PersonalPlanItemCreate,
@@ -123,6 +127,7 @@ from .services import calculate_igtf, calculate_vat, money, normalize_rif
 
 
 MAX_COMPANY_DOCUMENT_BYTES = 10 * 1024 * 1024
+logger = logging.getLogger(__name__)
 ALLOWED_COMPANY_DOCUMENT_TYPES = {
     "application/pdf",
     "image/jpeg",
@@ -456,6 +461,16 @@ def health() -> dict[str, str]:
     return {"status": "ok", "service": "contabilidad"}
 
 
+@app.get("/ready")
+def readiness(db: DbSession) -> dict[str, str]:
+    try:
+        db.execute(text("SELECT 1"))
+    except SQLAlchemyError as exc:
+        logger.exception("Database readiness check failed")
+        raise HTTPException(status_code=503, detail="La base de datos no está disponible") from exc
+    return {"status": "ready", "service": "contabilidad"}
+
+
 @app.post("/auth/token")
 def login(
     form: Annotated[OAuth2PasswordRequestForm, Depends()],
@@ -468,7 +483,10 @@ def login(
             detail="Credenciales inválidas",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    return {"access_token": create_access_token(user.id), "token_type": "bearer"}
+    return {
+        "access_token": create_access_token(user.id, user.auth_version),
+        "token_type": "bearer",
+    }
 
 
 @app.get("/auth/me")
@@ -523,6 +541,129 @@ def change_password(
     return {"status": "updated"}
 
 
+def password_reset_email_digest(email: str) -> str:
+    key = os.getenv("JWT_SECRET", "").encode("utf-8")
+    return hmac.new(
+        key,
+        f"password-reset-email:{email.strip().lower()}".encode("utf-8"),
+        hashlib.sha256,
+    ).hexdigest()
+
+
+def password_reset_token_digest(token: str) -> str:
+    key = os.getenv("JWT_SECRET", "").encode("utf-8")
+    return hmac.new(key, f"password-reset-token:{token}".encode("utf-8"), hashlib.sha256).hexdigest()
+
+
+@app.post("/auth/password-reset/request", status_code=202)
+def request_password_reset(
+    payload: PasswordResetRequest,
+    db: DbSession,
+) -> dict[str, str]:
+    if not os.getenv("MAIL_HOST", "").strip() or not os.getenv("MAIL_FROM", "").strip():
+        raise HTTPException(
+            status_code=503,
+            detail="La recuperación de contraseña requiere configurar el correo del sistema.",
+        )
+    email = str(payload.email).strip().lower()
+    email_digest = password_reset_email_digest(email)
+    now = datetime.now(timezone.utc)
+    latest = db.scalar(
+        select(PasswordResetChallenge)
+        .where(PasswordResetChallenge.email_digest == email_digest)
+        .order_by(PasswordResetChallenge.created_at.desc())
+        .limit(1)
+    )
+    if latest:
+        created_at = latest.created_at
+        created_at = created_at.replace(tzinfo=timezone.utc) if created_at.tzinfo is None else created_at
+        if now - created_at < timedelta(seconds=60):
+            return {
+                "status": "accepted",
+                "message": "Si el correo corresponde a una cuenta, recibirá instrucciones de recuperación.",
+            }
+
+    account = db.scalar(select(User).where(User.email == email, User.active.is_(True)))
+    token = secrets.token_urlsafe(32) if account else None
+    challenge = PasswordResetChallenge(
+        email_digest=email_digest,
+        user_id=account.id if account else None,
+        token_digest=password_reset_token_digest(token) if token else None,
+        expires_at=now + timedelta(minutes=30) if token else None,
+    )
+    db.add(challenge)
+    db.commit()
+    if not token:
+        return {
+            "status": "accepted",
+            "message": "Si el correo corresponde a una cuenta, recibirá instrucciones de recuperación.",
+        }
+    body = (
+        f"<p>Se solicitó recuperar el acceso a su cuenta.</p>"
+        f"<p>Si su correo corresponde a una cuenta, use este código en la pantalla de recuperación. "
+        f"Vence en 30 minutos y solo puede utilizarse una vez:</p>"
+        f"<p style='font-size:20px;font-weight:bold;word-break:break-all'>{html.escape(token)}</p>"
+        "<p>Si no solicitó este cambio, ignore este mensaje. La contraseña actual seguirá vigente.</p>"
+    )
+    try:
+        send_configured_email(email, "Recuperación de acceso · Sistema Contable Multiempresa", body)
+    except (OSError, RuntimeError, smtplib.SMTPException, ValueError) as exc:
+        logger.warning(
+            "Password recovery email could not be sent (email_digest=%s): %s",
+            email_digest,
+            type(exc).__name__,
+        )
+        raise HTTPException(
+            status_code=503,
+            detail="El servicio de correo no pudo enviar las instrucciones. Intente más tarde.",
+        ) from exc
+    return {
+        "status": "accepted",
+        "message": "Si el correo corresponde a una cuenta, recibirá instrucciones de recuperación.",
+    }
+
+
+@app.post("/auth/password-reset/confirm")
+def confirm_password_reset(
+    payload: PasswordResetConfirm,
+    request: Request,
+    db: DbSession,
+) -> dict[str, str]:
+    email = str(payload.email).strip().lower()
+    now = datetime.now(timezone.utc)
+    challenge = db.scalar(
+        select(PasswordResetChallenge)
+        .where(
+            PasswordResetChallenge.email_digest == password_reset_email_digest(email),
+            PasswordResetChallenge.token_digest == password_reset_token_digest(payload.token),
+            PasswordResetChallenge.used_at.is_(None),
+            PasswordResetChallenge.expires_at > now,
+        )
+        .order_by(PasswordResetChallenge.created_at.desc())
+        .with_for_update()
+    )
+    if not challenge or not challenge.user_id:
+        raise HTTPException(status_code=400, detail="El código no es válido o venció; solicite otro.")
+    account = db.scalar(
+        select(User).where(User.id == challenge.user_id, User.active.is_(True)).with_for_update()
+    )
+    if not account:
+        raise HTTPException(status_code=400, detail="El código no es válido o venció; solicite otro.")
+    account.password_hash = hash_password(payload.new_password)
+    account.auth_version += 1
+    tokens = db.scalars(
+        select(PasswordResetChallenge).where(
+            PasswordResetChallenge.user_id == account.id,
+            PasswordResetChallenge.used_at.is_(None),
+        )
+    ).all()
+    for item in tokens:
+        item.used_at = now
+    add_audit(db, account.id, None, "password.reset", "user", account.id, request)
+    db.commit()
+    return {"status": "updated", "message": "Contraseña actualizada. Inicie sesión nuevamente."}
+
+
 @app.post("/demo/access", response_model=DemoAccessRequestSubmission, status_code=202)
 def request_demo_access(
     payload: DemoAccessRequestCreate,
@@ -530,6 +671,8 @@ def request_demo_access(
     db: DbSession,
 ) -> DemoAccessRequestSubmission:
     email = str(payload.email).strip().lower()
+    if not payload.privacy_notice_accepted:
+        raise HTTPException(status_code=422, detail="Debe aceptar el aviso de privacidad para solicitar acceso.")
     if not os.getenv("MAIL_HOST") or not os.getenv("MAIL_FROM"):
         raise HTTPException(
             status_code=503,
@@ -565,6 +708,8 @@ def request_demo_access(
         rif=payload.rif,
         address=payload.address.strip(),
         profession=payload.profession.strip(),
+        privacy_notice_version="2026-10-04-v1",
+        privacy_accepted_at=now,
         status="pending_email",
         verification_attempts=0,
         verification_expires_at=now + timedelta(minutes=15),

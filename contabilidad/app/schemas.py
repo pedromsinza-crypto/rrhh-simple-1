@@ -26,6 +26,16 @@ class PasswordChange(BaseModel):
     new_password: str = Field(min_length=12, max_length=128)
 
 
+class PasswordResetRequest(BaseModel):
+    email: EmailStr
+
+
+class PasswordResetConfirm(BaseModel):
+    email: EmailStr
+    token: str = Field(min_length=32, max_length=128)
+    new_password: str = Field(min_length=12, max_length=128)
+
+
 class SystemSettingsUpdate(BaseModel):
     company_limit: int = Field(ge=1, le=1000)
 
@@ -116,6 +126,7 @@ class DemoAccessRequestCreate(BaseModel):
     rif: str
     address: str = Field(min_length=8, max_length=2000)
     profession: str = Field(min_length=2, max_length=120)
+    privacy_notice_accepted: bool
     verification_code: str | None = Field(default=None, pattern=r"^[0-9]{6}$")
 
     @field_validator("identity_number")

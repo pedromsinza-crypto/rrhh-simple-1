@@ -2,7 +2,7 @@ import os
 import importlib
 import re
 import tempfile
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 
@@ -17,6 +17,8 @@ from fastapi.testclient import TestClient
 
 from app.database import engine
 from app.main import app
+from app.models import DemoAccessRequest, PasswordResetChallenge
+from app.database import SessionLocal
 
 
 @pytest.fixture(scope="module", autouse=True)
@@ -784,10 +786,15 @@ def test_demo_requires_verified_email_and_manual_review(monkeypatch):
                 "rif": "V-12345678-9",
                 "address": "Avenida de prueba, Caracas",
                 "profession": "Contadora pública",
+                "privacy_notice_accepted": True,
             },
         )
         assert submission.status_code == 202, submission.text
         request_id = submission.json()["id"]
+        with SessionLocal() as db:
+            consent = db.get(DemoAccessRequest, request_id)
+            assert consent.privacy_notice_version == "2026-10-04-v1"
+            assert consent.privacy_accepted_at is not None
         code = re.search(r">([0-9]{6})</p>", sent_messages[0][2]).group(1)
         admin_token = client.post(
             "/auth/token",
@@ -1383,3 +1390,201 @@ def test_admin_can_check_integrations_and_send_test_email(monkeypatch):
         member_headers = {"Authorization": f"Bearer {member_token}"}
         assert client.get("/admin/integrations/status", headers=member_headers).status_code == 403
         assert client.post("/admin/integrations/email-test", headers=member_headers).status_code == 403
+
+
+def test_compose_requires_database_secret_and_binds_host_ports_to_localhost():
+    compose_file = Path(__file__).resolve().parents[1] / "docker-compose.yml"
+    compose = compose_file.read_text(encoding="utf-8")
+    assert "POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?" in compose
+    assert "POSTGRES_PASSWORD: contabilidad" not in compose
+    assert "127.0.0.1:5433:5432" in compose
+    assert '${API_BIND_ADDRESS:-127.0.0.1}:8000:8000' in compose
+    assert "contabilidad:contabilidad@" not in compose
+
+
+def test_readiness_endpoint_checks_database():
+    with TestClient(app) as client:
+        assert client.get("/health").json()["status"] == "ok"
+        ready = client.get("/ready")
+        assert ready.status_code == 200, ready.text
+        assert ready.json()["status"] == "ready"
+
+
+def test_password_reset_is_single_use_revokes_existing_tokens_and_hides_accounts(monkeypatch):
+    sent_messages = []
+    main_module = importlib.import_module("app.main")
+    monkeypatch.setenv("MAIL_HOST", "smtp.example.test")
+    monkeypatch.setenv("MAIL_FROM", "noreply@example.test")
+    monkeypatch.setattr(
+        main_module,
+        "send_configured_email",
+        lambda recipient, subject, body: sent_messages.append((recipient, subject, body)),
+    )
+    with TestClient(app) as client:
+        admin_token = client.post(
+            "/auth/token",
+            data={"username": "admin@example.com", "password": "a-secure-test-password"},
+        ).json()["access_token"]
+        admin_headers = {"Authorization": f"Bearer {admin_token}"}
+        licensed = client.post(
+            "/admin/licenses",
+            headers=admin_headers,
+            json={
+                "email": "reset-owner@example.com",
+                "password": "a-secure-original-password",
+                "role": "accountant",
+                "subscribed_at": date.today().isoformat(),
+                "expires_at": "2030-12-31",
+            },
+        )
+        assert licensed.status_code == 201, licensed.text
+        old_token = client.post(
+            "/auth/token",
+            data={
+                "username": "reset-owner@example.com",
+                "password": "a-secure-original-password",
+            },
+        ).json()["access_token"]
+
+        request = client.post(
+            "/auth/password-reset/request",
+            json={"email": "reset-owner@example.com"},
+        )
+        assert request.status_code == 202, request.text
+        assert request.json()["message"] == "Si el correo corresponde a una cuenta, recibirá instrucciones de recuperación."
+        token = re.search(
+            r"font-weight:bold;word-break:break-all'>([^<]+)</p>",
+            sent_messages[-1][2],
+        ).group(1)
+        old_code_rate_limited = client.post(
+            "/auth/password-reset/request",
+            json={"email": "reset-owner@example.com"},
+        )
+        assert old_code_rate_limited.status_code == 202
+        assert len(sent_messages) == 1
+
+        unknown = client.post(
+            "/auth/password-reset/request",
+            json={"email": "unknown-reset-owner@example.com"},
+        )
+        assert unknown.status_code == request.status_code
+        assert unknown.json() == request.json()
+        assert len(sent_messages) == 1
+        assert sent_messages[-1][0] == "reset-owner@example.com"
+
+        completed = client.post(
+            "/auth/password-reset/confirm",
+            json={
+                "email": "reset-owner@example.com",
+                "token": token,
+                "new_password": "a-secure-replacement-password",
+            },
+        )
+        assert completed.status_code == 200, completed.text
+        assert client.get(
+            "/auth/me",
+            headers={"Authorization": f"Bearer {old_token}"},
+        ).status_code == 401
+        assert client.post(
+            "/auth/password-reset/confirm",
+            json={
+                "email": "reset-owner@example.com",
+                "token": token,
+                "new_password": "another-secure-password",
+            },
+        ).status_code == 400
+        assert client.post(
+            "/auth/token",
+            data={
+                "username": "reset-owner@example.com",
+                "password": "a-secure-original-password",
+            },
+        ).status_code == 401
+        assert client.post(
+            "/auth/token",
+            data={
+                "username": "reset-owner@example.com",
+                "password": "a-secure-replacement-password",
+            },
+        ).status_code == 200
+
+
+def test_demo_signup_requires_privacy_notice_acceptance(monkeypatch):
+    monkeypatch.setenv("MAIL_HOST", "smtp.example.test")
+    monkeypatch.setenv("MAIL_FROM", "noreply@example.test")
+    with TestClient(app) as client:
+        response = client.post(
+            "/demo/access",
+            json={
+                "email": "privacy-demo@example.com",
+                "password": "a-secure-privacy-password",
+                "full_name": "Usuario de privacidad",
+                "identity_number": "V12345679",
+                "rif": "V-12345679-9",
+                "address": "Dirección de prueba número 1",
+                "profession": "Contador",
+                "privacy_notice_accepted": False,
+            },
+        )
+        assert response.status_code == 422
+        with SessionLocal() as db:
+            assert db.query(DemoAccessRequest).filter_by(email="privacy-demo@example.com").count() == 0
+
+
+def test_retention_job_deletes_old_demo_and_reset_records_only():
+    with TestClient(app):
+        now = datetime.now(timezone.utc)
+        old = now - timedelta(days=100)
+        recent = now - timedelta(days=3)
+        with SessionLocal.begin() as db:
+            db.add(
+                DemoAccessRequest(
+                    email="old-retention@example.com",
+                    password_hash="hashed-test-password",
+                    full_name="Old applicant",
+                    identity_number="V12345001",
+                    rif="V-12345001-1",
+                    address="Old application address",
+                    profession="Accountant",
+                    privacy_notice_version="2026-10-04-v1",
+                    privacy_accepted_at=old,
+                    status="rejected",
+                    created_at=old,
+                )
+            )
+            db.add(
+                DemoAccessRequest(
+                    email="recent-retention@example.com",
+                    password_hash="hashed-test-password",
+                    full_name="Recent applicant",
+                    identity_number="V12345002",
+                    rif="V-12345002-2",
+                    address="Recent application address",
+                    profession="Accountant",
+                    privacy_notice_version="2026-10-04-v1",
+                    privacy_accepted_at=recent,
+                    status="pending_email",
+                    created_at=recent,
+                )
+            )
+            db.add(
+                PasswordResetChallenge(
+                    email_digest="o" * 64,
+                    created_at=old,
+                )
+            )
+            db.add(
+                PasswordResetChallenge(
+                    email_digest="r" * 64,
+                    created_at=recent,
+                )
+            )
+        purge_module = importlib.import_module("scripts.purge_expired_personal_data")
+        counts = purge_module.purge_expired_personal_data(dry_run=True)
+        assert counts == {"demo_requests": 1, "password_reset_records": 1}
+        assert purge_module.purge_expired_personal_data(dry_run=False) == counts
+        with SessionLocal() as db:
+            assert db.query(DemoAccessRequest).filter_by(email="old-retention@example.com").count() == 0
+            assert db.query(DemoAccessRequest).filter_by(email="recent-retention@example.com").count() == 1
+            assert db.query(PasswordResetChallenge).filter_by(email_digest="o" * 64).count() == 0
+            assert db.query(PasswordResetChallenge).filter_by(email_digest="r" * 64).count() == 1

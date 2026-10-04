@@ -4,9 +4,9 @@ services:
     environment:
       POSTGRES_DB: contabilidad
       POSTGRES_USER: contabilidad
-      POSTGRES_PASSWORD: contabilidad
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set a strong POSTGRES_PASSWORD in contabilidad/.env}
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - accounting_pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -14,17 +14,29 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+    restart: unless-stopped
 
   api:
     build: .
     environment:
-      DATABASE_URL: postgresql+psycopg://contabilidad:contabilidad@db:5432/contabilidad
+      DATABASE_URL: postgresql+psycopg://contabilidad:${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in contabilidad/.env}@db:5432/contabilidad
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in contabilidad/.env}
       ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-60}
       BOOTSTRAP_ADMIN_EMAIL: ${BOOTSTRAP_ADMIN_EMAIL:?Set BOOTSTRAP_ADMIN_EMAIL in contabilidad/.env}
       BOOTSTRAP_ADMIN_PASSWORD: ${BOOTSTRAP_ADMIN_PASSWORD:?Set BOOTSTRAP_ADMIN_PASSWORD in contabilidad/.env}
     ports:
-      - "8000:8000"
+      - "${API_BIND_ADDRESS:-127.0.0.1}:8000:8000"
+    healthcheck:
+      test:
+        - CMD
+        - python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/ready', timeout=3).read()"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
     depends_on:
       db:
         condition: service_healthy
