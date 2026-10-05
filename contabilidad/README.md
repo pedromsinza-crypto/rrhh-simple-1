@@ -29,6 +29,20 @@ uvicorn app.main:app --reload
 pytest
 ```
 
+### Crear el esquema contable en Aiven
+
+La base `contabilidad_app` debe existir en el servicio PostgreSQL de Aiven. En Windows, descarga la versión actualizada del proyecto y ejecuta desde PowerShell:
+
+```powershell
+Set-Location "D:\Proyecto\sistema-contable-multiempresa"
+.\.venv\Scripts\python.exe -m pip install -r .\requirements.txt
+.\scripts\migrate_aiven.ps1
+```
+
+El script solicita host, puerto, usuario y contraseña del panel **Aiven → servicio PostgreSQL → Connect**; la contraseña se escribe oculta y no se guarda en `.env` ni en el proyecto. La conexión usa TLS (`sslmode=require`) y ejecuta `alembic upgrade head` para crear tablas, claves foráneas, índices y restricciones de las migraciones versionadas. El usuario PostgreSQL debe poder crear objetos en `public` y actualizar `alembic_version`. No pegues código Python en **SQL editor**: ese editor acepta SQL; Alembic se ejecuta desde PowerShell con Python.
+
+Este procedimiento crea/actualiza el **esquema**, pero no copia registros de la base local ni crea el superadministrador de la aplicación. Si necesitas trasladar datos existentes, primero valida un respaldo restaurable y confirma que `contabilidad_app` no contiene información que se deba conservar; el procedimiento de copia de datos es distinto y no debe mezclarse con una migración de esquema sobre una base ya poblada.
+
 ## Módulos/API incluidos
 
 - **Licencias comerciales:** máximo de 10 empresas por acceso (el administrador del sistema puede fijar un límite menor), fechas de suscripción/vencimiento, perfiles contador/administrador de empresa, activación, suspensión y revocación. Los accesos suspendidos, revocados o vencidos no pueden autenticarse en la API contable.
