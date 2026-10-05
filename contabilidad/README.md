@@ -12,6 +12,41 @@ Para acceso remoto, coloca un proxy inverso con HTTPS válido delante de la API,
 
 `DATABASE_URL` también debe llevar la contraseña real de PostgreSQL cuando se ejecuta FastAPI directamente fuera de Compose. La aplicación ahora se detiene con un error claro si esa variable falta; no contiene una contraseña de base de datos predeterminada.
 
+## Instalación en Kali Linux con PostgreSQL de Aiven
+
+La aplicación puede ejecutarse en Kali con Docker Compose y usar PostgreSQL remoto en Aiven. Instala Docker Engine y el plugin Compose v2 para Debian/Kali, junto con Git:
+
+```bash
+sudo apt update
+sudo apt install -y docker.io docker-compose-v2 git
+sudo systemctl enable --now docker
+sudo usermod -aG docker "$USER"
+newgrp docker
+docker compose version
+```
+
+Si tu repositorio de Kali no ofrece `docker-compose-v2`, instala Docker Engine y Compose v2 siguiendo la documentación oficial de Docker para Debian; no uses Compose v1. Luego descarga este repositorio y ejecuta:
+
+```bash
+git clone --branch pedromsinza-crypto-sistema-contable-multiempresa https://github.com/Psinza/rrhh-simple.git
+cd rrhh-simple/contabilidad
+chmod +x scripts/install_kali.sh
+./scripts/install_kali.sh
+```
+
+El grupo `docker` puede otorgar privilegios equivalentes a root: agréga solo una cuenta de confianza y cierra/reabre sesión para activar el grupo.
+
+El instalador solicita host, puerto, nombre de la base, usuario y contraseña de PostgreSQL de Aiven, además de las credenciales iniciales del administrador de la aplicación. La contraseña de base se pide de forma oculta; crea `.env` con permisos `600`, exige TLS y genera un secreto JWT aleatorio. **Usa la contraseña de Aiven que hayas rotado**; no la pongas en el comando ni la guardes en el repositorio. El nombre de la base debe ser el que realmente exista en el servicio (por ejemplo `defaultdb` o `contabilidad_app`). La cuenta PostgreSQL debe poder ejecutar las migraciones en el esquema `public`. La aplicación crea/actualiza sus tablas al primer arranque; no restaures `sql/create_database.sql` antes, pues el esquema duplicaría la migración.
+
+El servicio queda accesible solo desde Kali en `http://127.0.0.1:8000`. Estado y logs:
+
+```bash
+docker compose --env-file .env -f docker-compose.aiven.yml ps
+docker compose --env-file .env -f docker-compose.aiven.yml logs -f api
+```
+
+No expongas el puerto 8000 directamente a Internet ni pongas Aiven en allowlist abierta. Restringe Aiven a la IP pública de Kali y, si necesitas acceso web remoto, configura un proxy inverso HTTPS y firewall antes de cambiar `API_BIND_ADDRESS`; Kali es una distribución de pruebas/pentest y se recomienda un servidor Debian dedicado para producción. No compartas `.env` ni capturas que revelen credenciales.
+
 La primera ejecución crea al **administrador del sistema** (superusuario) indicado por `BOOTSTRAP_ADMIN_*`. Este es el único rol que gestiona la plataforma, clientes, licencias y perfiles. Al crear o modificar una licencia, asigna el cargo y permisos del nuevo usuario según sus funciones: **contador** o **administrador de empresa** (profesional licenciado en administración). El administrador de empresa es un rol operativo de cliente y no tiene privilegios de superusuario. En la gestión de equipo de una empresa no se puede cambiar el rol: se respeta el que el administrador del sistema asignó a la cuenta invitada.
 
 ## Desarrollo y pruebas
