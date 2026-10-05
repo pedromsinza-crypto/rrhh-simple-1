@@ -43,6 +43,8 @@ El script solicita host, puerto, usuario y contraseña del panel **Aiven → ser
 
 Este procedimiento crea/actualiza el **esquema**, pero no copia registros de la base local ni crea el superadministrador de la aplicación. Si necesitas trasladar datos existentes, primero valida un respaldo restaurable y confirma que `contabilidad_app` no contiene información que se deba conservar; el procedimiento de copia de datos es distinto y no debe mezclarse con una migración de esquema sobre una base ya poblada.
 
+También se incluye `sql/create_database.sql`, un volcado de esquema PostgreSQL para una base vacía que crea las tablas, relaciones, índices y restricciones y marca Alembic en `0007_security_retention`. En Aiven selecciona `contabilidad_app` en el editor SQL y ejecuta el archivo allí. Úsalo una sola vez y no sobre una base que ya tenga tablas del sistema; si la base ya está inicializada, usa `migrate_aiven.ps1` en su lugar.
+
 ## Módulos/API incluidos
 
 - **Licencias comerciales:** máximo de 10 empresas por acceso (el administrador del sistema puede fijar un límite menor), fechas de suscripción/vencimiento, perfiles contador/administrador de empresa, activación, suspensión y revocación. Los accesos suspendidos, revocados o vencidos no pueden autenticarse en la API contable.
